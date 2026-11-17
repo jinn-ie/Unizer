@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Reservation      # 테이블
-from app.schemas import ReservationRead # 스키마
+from app.models import RegularPractice, Reservation      # 테이블
+from app.schemas import RegularPracticeRead, ReservationRead # 스키마
 
 # FastAPI 앱 객체. uvicorn 이 이 객체를 찾아서 실행한다. (app.main:app)
 app = FastAPI(title="dance-ud API")
@@ -15,6 +15,13 @@ app = FastAPI(title="dance-ud API")
 @app.get("/")
 def hello():
     return {"message": "춤춰라 유디!"}
+
+@app.get("/api/regular-practices", response_model=list[RegularPracticeRead])
+def list_regular_practices(db: Annotated[Session, Depends(get_db)]):
+    stmt = select(RegularPractice).order_by(
+        RegularPractice.starts_on, RegularPractice.weekday, RegularPractice.start_time
+    )
+    return db.scalars(stmt).all()
 
 @app.get("/api/reservations", response_model=list[ReservationRead])
 def list_reservations(db: Annotated[Session, Depends(get_db)]):
