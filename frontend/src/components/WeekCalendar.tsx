@@ -1,0 +1,208 @@
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { Reservation } from '../types'
+import { SPACES, SPACE_INDEX } from '../lib/spaces'
+import { addDays, formatMinutes, isSameDay, parseLocal, WEEKDAYS } from '../lib/date'
+
+const SLOT_MIN = 30
+const DAY_MIN = 24 * 60
+const BASE_START_MIN = 8 * 60 // 위로 스크롤하면 08:00 까지 보임
+const DEFAULT_TOP_MIN = 16 * 60 // 처음 화면 맨 위에 보일 시각
+const VISIBLE_ROWS = (DAY_MIN - DEFAULT_TOP_MIN) / SLOT_MIN // 16:00~24:00 이 화면에 꽉 차도록
+const MIN_ROW_PX = 18
+const MAX_ROW_PX = 44
+
+interface Segment {
+  reservation: Reservation
+  dayIndex: number
+  startMin: number // 그 날 0시 기준 분
+  endMin: number
+  lane: number
+}
+
+interface Props {
+  weekStart: Date
+  reservations: Reservation[]
+  now: Date
+  onSelectDay: (day: Date, focusId?: number) => void
+}
+
+export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Props) {
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
+  )
+
+  // 예약을 날짜별 조각으로 자르기 (자정을 넘는 예약도 날마다 나눠서 그림)
+  const segments = useMemo(() => {
+    const out: Segment[] = []
+    for (const r of reservations) {
+      const lane = SPACE_INDEX.get(r.space)
+      if (lane === undefined) continue
+      const start = parseLocal(r.start_at).getTime()
+      const end = parseLocal(r.end_at).getTime()
+      days.forEach((day, dayIndex) => {
+        const dayStart = day.getTime()
+        const dayEnd = addDays(day, 1).getTime()
+        const s = Math.max(start, dayStart)
+        const e = Math.min(end, dayEnd)
+        if (e <= s) return
+        out.push({
+          reservation: r,
+          dayIndex,
+          startMin: (s - dayStart) / 60000,
+          endMin: (e - dayStart) / 60000,
+          lane,
+        })
+      })
+    }
+    return out
+  }, [reservations, days])
+
+  // 기본 08:00 부터. 그보다 이른 예약이 있는 주는 그 시각(정시)까지 확장
+  const gridStartMin = useMemo(() => {
+    const earliest = Math.min(BASE_START_MIN, ...segments.map((s) => s.startMin))
+    return Math.floor(earliest / 60) * 60
+  }, [segments])
+  const totalRows = (DAY_MIN - gridStartMin) / SLOT_MIN
+
+  // ── 칸 높이: 스크롤 영역 높이에 16:00~24:00 이 딱 맞게 ──
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const rowRef = useRef<number | null>(null)
+  const gridStartRef = useRef(gridStartMin)
+  const pendingTopMin = useRef<number | null>(null)
+  const [rowPx, setRowPx] = useState(20)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const measure = () => {
+      const next = Math.min(MAX_ROW_PX, Math.max(MIN_ROW_PX, el.clientHeight / VISIBLE_ROWS))
+      const prev = rowRef.current
+      if (prev !== null && Math.abs(prev - next) < 0.5) return
+      // 처음엔 16:00 으로, 이후 화면 크기가 바뀌면 보고 있던 시각을 유지
+      pendingTopMin.current =
+        prev === null ? DEFAULT_TOP_MIN : gridStartRef.current + (el.scrollTop / prev) * SLOT_MIN
+      rowRef.current = next
+      setRowPx(next)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    // 측정된 칸 높이로 다시 그려진 뒤에만 스크롤 위치를 맞춤
+    if (!el || pendingTopMin.current === null || rowPx !== rowRef.current) return
+    el.scrollTop = ((pendingTopMin.current - gridStartMin) / SLOT_MIN) * rowPx
+    pendingTopMin.current = null
+  }, [rowPx, gridStartMin])
+
+  // 주를 바꿔서 시작 시각이 달라져도 보던 시각이 그대로 보이게
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    const prevStart = gridStartRef.current
+    gridStartRef.current = gridStartMin
+    if (!el || prevStart === gridStartMin) return
+    el.scrollTop += ((prevStart - gridStartMin) / SLOT_MIN) * rowPx
+  }, [gridStartMin, rowPx])
+
+  const toY = (min: number) => ((min - gridStartMin) / SLOT_MIN) * rowPx
+  const bodyHeight = totalRows * rowPx
+
+  const hourMarks: number[] = []
+  for (let m = gridStartMin; m < DAY_MIN; m += 60) hourMarks.push(m)
+
+  const nowMin = now.getHours() * 60 + now.getMinutes()
+
+  return (
+    <div className="cal">
+      <div className="cal-head">
+        <div className="cal-corner" />
+        {days.map((d, i) => {
+          const isToday = isSameDay(d, now)
+          return (
+            <button
+              key={i}
+              type="button"
+              className={`cal-day-head${isToday ? ' is-today' : ''}`}
+              onClick={() => onSelectDay(d)}
+            >
+              <span className="cal-dow">{WEEKDAYS[i]}</span>
+              <span className="cal-date">{d.getDate()}</span>
+              <span className="cal-lane-key" aria-hidden>
+                {SPACES.map((s) => (
+                  <i key={s.key} style={{ background: s.color }} />
+                ))}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="cal-scroll" ref={scrollRef}>
+        <div className="cal-body" style={{ height: bodyHeight }}>
+          <div className="cal-times" aria-hidden>
+            {hourMarks.map((m) => (
+              <span key={m} className="cal-time" style={{ top: toY(m) }}>
+                {formatMinutes(m)}
+              </span>
+            ))}
+          </div>
+
+          {/* 가로 격자선: 예약 막대와 같은 계산(toY)으로 그려서 어긋나지 않게 */}
+          <div className="cal-lines" aria-hidden>
+            {Array.from({ length: totalRows }, (_, k) => (
+              <i
+                key={k}
+                className={(gridStartMin + k * SLOT_MIN) % 60 === 0 ? 'is-hour' : undefined}
+                style={{ top: k * rowPx }}
+              />
+            ))}
+          </div>
+
+          {days.map((d, i) => {
+            const isToday = isSameDay(d, now)
+            return (
+              <div
+                key={i}
+                className={`cal-day${isToday ? ' is-today' : ''}`}
+                onClick={() => onSelectDay(d)}
+              >
+                <i className="cal-lane-line" style={{ left: '25%' }} />
+                <i className="cal-lane-line" style={{ left: '50%' }} />
+                <i className="cal-lane-line" style={{ left: '75%' }} />
+
+                {segments
+                  .filter((s) => s.dayIndex === i)
+                  .map((s) => (
+                    <button
+                      key={`${s.reservation.id}-${i}`}
+                      type="button"
+                      className="cal-block"
+                      aria-label={`${s.reservation.song_title} ${s.reservation.space}`}
+                      style={{
+                        top: toY(s.startMin) + 1,
+                        height: Math.max(toY(s.endMin) - toY(s.startMin) - 2, 4),
+                        left: `calc(${s.lane * 25}% + 1.5px)`,
+                        background: SPACES[s.lane].color,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSelectDay(d, s.reservation.id)
+                      }}
+                    />
+                  ))}
+
+                {isToday && nowMin >= gridStartMin && (
+                  <div className="cal-now" style={{ top: toY(nowMin) }} aria-hidden />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
