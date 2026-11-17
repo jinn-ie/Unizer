@@ -1,0 +1,25 @@
+# 환경 변수 (비밀값) — .env.example 만 커밋
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 로컬 DB 파일
+*.db
+*.sqlite3
+
+# Node / 프론트엔드
+node_modules/
+dist/
+
+# 에디터 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
