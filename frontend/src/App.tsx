@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TouchEvent } from 'react'
-import { fetchReservations } from './api'
-import type { Reservation } from './types'
+import { fetchRegularPractices, fetchReservations } from './api'
+import type { RegularPractice, Reservation } from './types'
 import { SPACES } from './lib/spaces'
 import {
   addDays,
   formatWeekRange,
   isSameDay,
   parseDateKey,
-  parseLocal,
   startOfWeek,
   toDateKey,
 } from './lib/date'
+import { expandRegularPractices, reservationToItem } from './lib/schedule'
 import { WeekCalendar } from './components/WeekCalendar'
 import { DaySheet } from './components/DaySheet'
 
 type LoadState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; data: Reservation[] }
+  | { status: 'ready'; reservations: Reservation[]; regulars: RegularPractice[] }
 
 // 주소에 ?week=2026-11-09 가 있으면 그 주를 보여줌 (카톡으로 특정 주 공유용)
 function initialWeek(): Date {
@@ -31,12 +31,16 @@ export default function App() {
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
   const [now, setNow] = useState(() => new Date())
-  const [sheet, setSheet] = useState<{ day: Date; focusId?: number } | null>(null)
+  const [sheet, setSheet] = useState<{ day: Date; focusKey?: string } | null>(null)
 
+  // 리더 연습 + 정규연습 API 를 동시에 호출하고, 둘 다 오면 화면에 반영
   useEffect(() => {
     const controller = new AbortController()
-    fetchReservations(controller.signal)
-      .then((data) => setLoad({ status: 'ready', data }))
+    Promise.all([
+      fetchReservations(controller.signal),
+      fetchRegularPractices(controller.signal),
+    ])
+      .then(([reservations, regulars]) => setLoad({ status: 'ready', reservations, regulars }))
       .catch((e) => {
         if (!controller.signal.aborted) {
           console.error(e)
@@ -60,15 +64,20 @@ export default function App() {
     window.history.replaceState(null, '', url)
   }, [weekStart, isThisWeek])
 
-  const reservations = useMemo(() => (load.status === 'ready' ? load.data : []), [load])
+  // 보고 있는 주의 일정 = 리더 연습 + 그 주 날짜로 펼친 정규연습
+  const items = useMemo(() => {
+    if (load.status !== 'ready') return []
+    return [
+      ...load.reservations.map(reservationToItem),
+      ...expandRegularPractices(load.regulars, weekStart),
+    ]
+  }, [load, weekStart])
 
   const weekCount = useMemo(() => {
     const s = weekStart.getTime()
     const e = addDays(weekStart, 7).getTime()
-    return reservations.filter(
-      (r) => parseLocal(r.start_at).getTime() < e && parseLocal(r.end_at).getTime() > s,
-    ).length
-  }, [reservations, weekStart])
+    return items.filter((it) => it.start.getTime() < e && it.end.getTime() > s).length
+  }, [items, weekStart])
 
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
 
@@ -130,9 +139,9 @@ export default function App() {
       <main className="cal-wrap" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <WeekCalendar
           weekStart={weekStart}
-          reservations={reservations}
+          items={items}
           now={now}
-          onSelectDay={(day, focusId) => setSheet({ day, focusId })}
+          onSelectDay={(day, focusKey) => setSheet({ day, focusKey })}
         />
 
         {load.status === 'loading' && <div className="cal-overlay">불러오는 중…</div>}
@@ -172,8 +181,8 @@ export default function App() {
       {sheet && (
         <DaySheet
           day={sheet.day}
-          focusId={sheet.focusId}
-          reservations={reservations}
+          focusKey={sheet.focusKey}
+          items={items}
           onClose={() => setSheet(null)}
         />
       )}

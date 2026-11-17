@@ -1,7 +1,8 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { Reservation } from '../types'
+import type { CSSProperties } from 'react'
+import type { ScheduleItem } from '../types'
 import { SPACES, SPACE_INDEX } from '../lib/spaces'
-import { addDays, formatMinutes, isSameDay, parseLocal, WEEKDAYS } from '../lib/date'
+import { addDays, formatMinutes, isSameDay, WEEKDAYS } from '../lib/date'
 
 const SLOT_MIN = 30
 const DAY_MIN = 24 * 60
@@ -12,7 +13,7 @@ const MIN_ROW_PX = 18
 const MAX_ROW_PX = 44
 
 interface Segment {
-  reservation: Reservation
+  item: ScheduleItem
   dayIndex: number
   startMin: number // 그 날 0시 기준 분
   endMin: number
@@ -21,12 +22,12 @@ interface Segment {
 
 interface Props {
   weekStart: Date
-  reservations: Reservation[]
+  items: ScheduleItem[]
   now: Date
-  onSelectDay: (day: Date, focusId?: number) => void
+  onSelectDay: (day: Date, focusKey?: string) => void
 }
 
-export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Props) {
+export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart],
@@ -35,11 +36,11 @@ export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Prop
   // 예약을 날짜별 조각으로 자르기 (자정을 넘는 예약도 날마다 나눠서 그림)
   const segments = useMemo(() => {
     const out: Segment[] = []
-    for (const r of reservations) {
-      const lane = SPACE_INDEX.get(r.space)
+    for (const item of items) {
+      const lane = SPACE_INDEX.get(item.space)
       if (lane === undefined) continue
-      const start = parseLocal(r.start_at).getTime()
-      const end = parseLocal(r.end_at).getTime()
+      const start = item.start.getTime()
+      const end = item.end.getTime()
       days.forEach((day, dayIndex) => {
         const dayStart = day.getTime()
         const dayEnd = addDays(day, 1).getTime()
@@ -47,7 +48,7 @@ export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Prop
         const e = Math.min(end, dayEnd)
         if (e <= s) return
         out.push({
-          reservation: r,
+          item,
           dayIndex,
           startMin: (s - dayStart) / 60000,
           endMin: (e - dayStart) / 60000,
@@ -56,7 +57,7 @@ export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Prop
       })
     }
     return out
-  }, [reservations, days])
+  }, [items, days])
 
   // 기본 08:00 부터. 그보다 이른 예약이 있는 주는 그 시각(정시)까지 확장
   const gridStartMin = useMemo(() => {
@@ -178,19 +179,21 @@ export function WeekCalendar({ weekStart, reservations, now, onSelectDay }: Prop
                   .filter((s) => s.dayIndex === i)
                   .map((s) => (
                     <button
-                      key={`${s.reservation.id}-${i}`}
+                      key={`${s.item.key}-${i}`}
                       type="button"
                       className="cal-block"
-                      aria-label={`${s.reservation.song_title} ${s.reservation.space}`}
-                      style={{
-                        top: toY(s.startMin) + 1,
-                        height: Math.max(toY(s.endMin) - toY(s.startMin) - 2, 4),
-                        left: `calc(${s.lane * 25}% + 1.5px)`,
-                        background: SPACES[s.lane].color,
-                      }}
+                      aria-label={`${s.item.title} ${s.item.space}`}
+                      style={
+                        {
+                          top: toY(s.startMin) + 1,
+                          height: Math.max(toY(s.endMin) - toY(s.startMin) - 2, 4),
+                          left: `calc(${s.lane * 25}% + 1.5px)`,
+                          '--c': SPACES[s.lane].color,
+                        } as CSSProperties
+                      }
                       onClick={(e) => {
                         e.stopPropagation()
-                        onSelectDay(d, s.reservation.id)
+                        onSelectDay(d, s.item.key)
                       }}
                     />
                   ))}
