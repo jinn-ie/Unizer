@@ -1,0 +1,51 @@
+
+erDiagram
+    Members {
+        int id PK
+        int gen
+        string name
+    }
+
+    Song {
+        int id PK
+        string title
+    }
+
+    Song_Members {
+        int song_id PK, FK
+        int member_id PK, FK
+        bool leader
+    }
+
+    MemberAvailability {
+        int id PK
+        int member_id FK
+        int weekday
+        time start_time
+        time end_time
+    }
+
+    RegularPractice {
+        int id PK
+        int song_id FK
+        int weekday
+        time start_time
+        time end_time
+        string space
+        date starts_on
+        date ends_on
+    }
+
+    Reservation {
+        int id PK
+        int song_id FK
+        datetime start_at
+        datetime end_at
+        string space
+    }
+
+    Members ||--o{ Song_Members : participates
+    Song ||--o{ Song_Members : has_members
+    Members ||--o{ MemberAvailability : has_schedule
+    Song ||--o{ RegularPractice : has_practice
+    Song ||--o{ Reservation : has_reservation

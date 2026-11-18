@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 DATABASE_URL = "sqlite:///./dance_ud.db"        # 실행한 위치에 dance_ud.db 파일이 생김
@@ -15,3 +15,8 @@ def get_db():
         yield db        # API 함수에 세션을 빌려줌
     finally:
         db.close()      # 응답이 끝나면 반드시 닫음
+
+# SQLite는 기본적으로 외래 키 검사를 안 함 -> 연결할 때마다 켜기
+@event.listens_for(engine, "connect")
+def enable_foreign_keys(dbapi_conn, _):
+    dbapi_conn.execute("PRAGMA foreign_keys=ON")
