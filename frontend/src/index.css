@@ -95,12 +95,49 @@ button {
   color: var(--teal);
 }
 
+/* ── 폴더 탭 ──────────────────────────── */
+/* 선택된 탭은 아래 선을 덮어서 내용과 이어진 것처럼 보이게 */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tab {
+  height: 36px;
+  padding: 0 16px;
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--faint);
+  transition: color 0.15s;
+}
+
+.tab.is-active {
+  background: var(--bg);
+  border-color: var(--line-strong);
+  color: var(--white);
+}
+
+.tab small {
+  margin-left: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+}
+
 /* ── 주 이동 ──────────────────────────── */
 .week-nav {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .icon-btn {
@@ -430,6 +467,108 @@ button {
 
 .week-summary b {
   color: var(--white);
+}
+
+/* ── 내부 데이터 탭 ───────────────────── */
+.app > .data,
+.app > .data-state {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.data {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 18px 0 8px;
+}
+
+.data::-webkit-scrollbar {
+  display: none;
+}
+
+.data-state {
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.data-sec + .data-sec {
+  margin-top: 28px;
+}
+
+.data-sec h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 2px 10px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.data-sec h2 span,
+.data-group h3 span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.leader-key {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.leader-key i {
+  width: 14px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(229, 83, 75, 0.45);
+}
+
+.data-group {
+  padding: 12px 12px 13px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.data-group + .data-group {
+  margin-top: 8px;
+}
+
+.data-group h3 {
+  margin: 0 0 9px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.name-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.name-list li {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.name-list li.is-leader {
+  background: rgba(229, 83, 75, 0.28);
 }
 
 /* ── 하단 시트 ────────────────────────── */

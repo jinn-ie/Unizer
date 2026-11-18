@@ -35,3 +35,22 @@ export interface ScheduleItem {
   start: Date
   end: Date
 }
+
+// 백엔드 schemas.py 의 MemberRead / SongRead / SongMemberRead 와 같은 모양
+export interface Member {
+  id: number
+  gen: number // 기수 (42, 43 …)
+  name: string
+}
+
+export interface Song {
+  id: number
+  title: string
+}
+
+// 곡 ↔ 부원 연결 한 줄
+export interface SongMember {
+  song_id: number
+  member_id: number
+  leader: boolean
+}
