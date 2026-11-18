@@ -14,6 +14,7 @@ export function reservationToItem(r: Reservation): ScheduleItem {
     space: r.space,
     start: parseLocal(r.start_at),
     end: parseLocal(r.end_at),
+    reservation: r,
   }
 }
 

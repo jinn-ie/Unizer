@@ -1,18 +1,47 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { ScheduleItem } from '../types'
 import { spaceInfo, SPACE_INDEX } from '../lib/spaces'
 import { addDays, formatDayTitle, formatDuration, formatTime } from '../lib/date'
+import { deleteReservation } from '../api'
+import { PracticeBox } from './PracticeBox'
 
 interface Props {
   day: Date
   focusKey?: string
   items: ScheduleItem[]
   onClose: () => void
+  onChanged: (focusKey?: string) => void // 추가/수정/삭제 후 다시 불러오기
 }
 
-export function DaySheet({ day, focusKey, items, onClose }: Props) {
+export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
   const focusRef = useRef<HTMLLIElement>(null)
+  const [activeKey, setActiveKey] = useState<string | null>(null) // 수정/삭제 버튼이 열린 보충
+  const [editKey, setEditKey] = useState<string | null>(null) // 입력창으로 바뀐 보충
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const toggleActive = (key: string) => {
+    setActiveKey((k) => (k === key ? null : key))
+    setConfirmDelete(false)
+    setActionError(null)
+  }
+
+  const remove = async (id: number) => {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await deleteReservation(id)
+      setActiveKey(null)
+      setConfirmDelete(false)
+      onChanged()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : '삭제하지 못했어요.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const dayItems = useMemo(() => {
     const dayStart = day.getTime()
@@ -27,14 +56,19 @@ export function DaySheet({ day, focusKey, items, onClose }: Props) {
   }, [day, items])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    // Esc: 수정 중이면 수정 취소, 아니면 닫기
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (editKey) setEditKey(null)
+      else onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [editKey, onClose])
 
   useEffect(() => {
     focusRef.current?.scrollIntoView({ block: 'nearest' })
-  }, [focusKey])
+  }, [focusKey, dayItems])
 
   return (
     <div className="sheet-root" role="dialog" aria-modal aria-label={formatDayTitle(day)}>
@@ -59,11 +93,33 @@ export function DaySheet({ day, focusKey, items, onClose }: Props) {
               const space = spaceInfo(it.space)
               const focused = it.key === focusKey
               const regular = it.kind === 'regular'
+              const r = it.reservation // 보충만 수정/삭제 가능 (정규연습은 X)
+              const active = !!r && it.key === activeKey
+
+              // 수정 중: 같은 자리에 기존 값이 채워진 입력 박스
+              if (r && it.key === editKey) {
+                return (
+                  <li key={it.key} className="sheet-edit">
+                    <PracticeBox
+                      day={day}
+                      editing={r}
+                      onCancel={() => setEditKey(null)}
+                      onSaved={(saved) => {
+                        setEditKey(null)
+                        setActiveKey(null)
+                        onChanged(`r-${saved.id}`)
+                      }}
+                    />
+                  </li>
+                )
+              }
+
               return (
                 <li
                   key={it.key}
                   ref={focused ? focusRef : undefined}
-                  className={`sheet-item${focused ? ' is-focused' : ''}`}
+                  className={`sheet-item${focused || active ? ' is-focused' : ''}${r ? ' is-tappable' : ''}`}
+                  onClick={r ? () => toggleActive(it.key) : undefined}
                 >
                   <span className="sheet-bar" style={{ '--c': space.color } as CSSProperties} />
                   <div className="sheet-main">
@@ -79,11 +135,37 @@ export function DaySheet({ day, focusKey, items, onClose }: Props) {
                   <span className="sheet-space" style={{ color: space.color, borderColor: space.color }}>
                     {space.label}
                   </span>
+
+                  {active && (
+                    <div className="sheet-actions" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="act-btn"
+                        onClick={() => {
+                          setEditKey(it.key)
+                          setActiveKey(null)
+                        }}
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className={`act-btn is-danger${confirmDelete ? ' is-confirm' : ''}`}
+                        disabled={busy}
+                        onClick={() => (confirmDelete ? remove(r.id) : setConfirmDelete(true))}
+                      >
+                        {busy ? '삭제하는 중…' : confirmDelete ? '정말 삭제할까요?' : '삭제'}
+                      </button>
+                      {actionError && <p className="form-error">{actionError}</p>}
+                    </div>
+                  )}
                 </li>
               )
             })}
           </ul>
         )}
+
+        <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
       </section>
     </div>
   )

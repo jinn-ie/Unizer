@@ -162,7 +162,7 @@ export function SchedulePage() {
         <p className="week-summary">
           {weekCount > 0 ? (
             <>
-              이 주의 연습 <b>{weekCount}건</b> · 날짜를 누르면 자세히 볼 수 있어요
+              이 주의 연습 <b>{weekCount}건</b> · 날짜를 누르면 연습을 추가할 수 있어요
             </>
           ) : (
             '이 주에는 연습이 없어요'
@@ -176,6 +176,11 @@ export function SchedulePage() {
           focusKey={sheet.focusKey}
           items={items}
           onClose={() => setSheet(null)}
+          onChanged={(focusKey) => {
+            // 추가/수정/삭제 후 다시 불러오고, 바뀐 연습을 목록에서 강조
+            setSheet((s) => s && { ...s, focusKey })
+            setReloadKey((k) => k + 1)
+          }}
         />
       )}
     </>

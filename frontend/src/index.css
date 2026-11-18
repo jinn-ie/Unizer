@@ -592,7 +592,7 @@ button {
   position: relative;
   width: 100%;
   max-width: 480px;
-  max-height: 72dvh;
+  max-height: 80dvh;
   overflow-y: auto;
   padding: 8px var(--pad) calc(env(safe-area-inset-bottom) + 20px);
   border-radius: 22px 22px 0 0;
@@ -662,6 +662,7 @@ button {
 
 .sheet-item {
   display: flex;
+  flex-wrap: wrap; /* 누르면 아래 줄에 수정/삭제 버튼 */
   align-items: center;
   gap: 12px;
   padding: 12px 12px 12px 10px;
@@ -669,6 +670,67 @@ button {
   background: var(--surface);
   border: 1px solid transparent;
   transition: border-color 0.2s;
+}
+
+.sheet-item.is-tappable {
+  cursor: pointer;
+}
+
+.sheet-item.is-tappable:active {
+  background: #141416;
+}
+
+/* 보충을 누르면 아래에 펼쳐지는 수정 / 삭제 */
+.sheet-actions {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-left: 17px;
+  cursor: default;
+}
+
+.act-btn {
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.act-btn:active {
+  background: #222225;
+}
+
+.act-btn.is-danger {
+  color: #ff8a83;
+}
+
+.act-btn.is-confirm {
+  background: var(--red);
+  color: var(--white);
+}
+
+.sheet-actions .form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.sheet-edit {
+  list-style: none;
+}
+
+.sheet-edit .quick-add {
+  margin-top: 0;
+}
+
+.quick-add.is-edit {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.qa-submit.is-cancel {
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .sheet-item.is-focused {
@@ -730,6 +792,373 @@ button {
   border: 1px solid;
   font-size: 12px;
   font-weight: 700;
+}
+
+/* ── 연습 추가 박스 (날짜 보드 맨 아래) ── */
+.quick-add {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+}
+
+.quick-add:focus-within {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.qa-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 1줄: 곡명 입력 */
+.song-input {
+  position: relative;
+}
+
+.song-input .field {
+  width: 100%;
+  height: 46px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--white);
+  font: inherit;
+  font-size: 16px; /* 16px 미만이면 아이폰이 입력할 때 화면을 확대함 */
+  font-weight: 700;
+  outline: none;
+}
+
+/* '공통 일정' 표시가 붙을 때만 오른쪽 공간 비워두기 */
+.song-input .field.is-picked:has(+ .song-check em) {
+  padding-right: 84px;
+}
+
+.song-input .field::placeholder {
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.song-check {
+  position: absolute;
+  right: 10px;
+  top: 23px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.song-check b {
+  display: none;
+}
+
+.song-check em {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--black);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 자동완성 목록: 박스 안에서 펼쳐짐 */
+.song-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.song-list li {
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.song-list li.is-cursor,
+.song-list li:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.song-list li.song-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.song-custom-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--black);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.song-custom small {
+  margin-left: 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* 2줄: 시간 | 장소 (반반) */
+.qa-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.qa-time,
+.qa-space select {
+  width: 100%;
+  height: 46px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--white);
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.qa-time {
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+
+.qa-time.is-open {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.qa-space {
+  position: relative;
+}
+
+.qa-space::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 7px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 2px;
+  background: var(--c);
+  pointer-events: none;
+}
+
+.qa-space::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.qa-space select {
+  appearance: none;
+  border: 0;
+  padding: 0 32px 0 28px;
+  outline: none;
+  cursor: pointer;
+}
+
+.qa-space option {
+  background: var(--surface-2);
+  color: var(--white);
+}
+
+/* + (등록) 버튼 */
+.qa-submit {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--black);
+  transition:
+    transform 0.12s,
+    background 0.15s;
+}
+
+.qa-submit:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.qa-submit:disabled {
+  background: var(--surface-2);
+  color: var(--faint);
+  cursor: default;
+}
+
+/* 시간을 누르면 펼쳐지는 휠 */
+.qa-wheels {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.time-sep {
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--faint);
+}
+
+.time-colon {
+  margin: 0 -4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.wheel {
+  position: relative;
+  flex: 1;
+  height: 120px; /* 40px × 3칸 */
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.wheel-band {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.wheel-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  padding: 40px 0; /* 첫/마지막 칸도 가운데까지 올 수 있게 */
+  outline: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent);
+  mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent);
+}
+
+.wheel-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  height: 40px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.wheel-item.is-active {
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.form-error {
+  margin: 8px 0 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(229, 83, 75, 0.14);
+  color: #ff8a83;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* ── 오류 알림 (2초) ───────────────────── */
+.toast {
+  position: fixed;
+  z-index: 30;
+  top: calc(env(safe-area-inset-top) + 16px);
+  left: 50%;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 12px 12px;
+  border-radius: 14px;
+  background: #2b1412;
+  border: 1px solid rgba(229, 83, 75, 0.55);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  color: #ffd2ce;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+  animation: toast-life 2s ease forwards;
+}
+
+.toast-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--red);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@keyframes toast-life {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
 }
 
 @keyframes slide-up {

@@ -34,6 +34,7 @@ export interface ScheduleItem {
   space: string
   start: Date
   end: Date
+  reservation?: Reservation // 보충이면 원본 (수정/삭제할 때 사용)
 }
 
 // 백엔드 schemas.py 의 MemberRead / SongRead / SongMemberRead 와 같은 모양
@@ -53,4 +54,13 @@ export interface SongMember {
   song_id: number
   member_id: number
   leader: boolean
+}
+
+// 백엔드 schemas.py 의 ReservationIn 과 같은 모양 (보충 등록/수정 때 보내는 값)
+export interface ReservationInput {
+  song_id: number | null
+  title: string | null
+  space: string
+  start_at: string // "2026-11-18T19:00:00"
+  end_at: string
 }
