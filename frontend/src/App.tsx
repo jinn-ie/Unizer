@@ -12,8 +12,8 @@ export default function App() {
       <header className="top">
         <img src="/logo.png" alt="UCDC" className="top-logo" />
         <div className="top-title">
-          <h1>연습실 예약</h1>
-          <p>UCDC · since 1983</p>
+          <h1>Unizer</h1>
+          <p>똑똑하게 춤춰라 유디 !</p>
         </div>
       </header>
 
