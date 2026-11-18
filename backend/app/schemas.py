@@ -26,3 +26,23 @@ class ReservationRead(BaseModel):
     space: Space
     start_at: datetime
     end_at: datetime
+
+class MemberRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    gen: int
+    name: str
+
+class SongRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+
+class SongMemberRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    song_id: int
+    member_id: int
+    leader: bool
