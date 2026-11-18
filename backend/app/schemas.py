@@ -1,5 +1,5 @@
 from datetime import date, datetime, time
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from app.models import Space
 
 class RegularPracticeRead(BaseModel):
@@ -15,6 +15,15 @@ class RegularPracticeRead(BaseModel):
     space: Space
     starts_on: date
     ends_on: date
+
+class ReservationIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    song_id: int | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    space: Space
+    start_at: datetime
+    end_at: datetime
 
 class ReservationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # SQLAlchemy 객체에서 값을 읽어올 수 있게
