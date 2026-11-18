@@ -1,5 +1,14 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 
+/* 무료 픽셀 글꼴 — 둥근모꼴 */
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── 로고 색상 ───────────────────────────── */
 :root {
   --black: #000000;
@@ -20,9 +29,14 @@
   --pad: 16px;
   --time-col: 38px;
 
-  color-scheme: dark;
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+  /* 글꼴: 전부 둥근모꼴 (못 불러오면 Pretendard 로 대신 표시) */
+  --font-fallback: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --font-body: 'DungGeunMo', var(--font-fallback);
+
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-synthesis: none; /* 픽셀 글꼴을 억지로 굵게 만들어 뭉개지지 않게 */
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
