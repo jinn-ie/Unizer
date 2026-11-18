@@ -1,11 +1,16 @@
 import type { RegularPractice, Reservation, ScheduleItem } from '../types'
 import { addDays, parseLocal, toDateKey } from './date'
 
+/** 화면에 보여줄 이름: 곡 연습이면 곡명, 공통 일정이면 title */
+function displayTitle(x: { song_title: string | null; title: string | null }): string {
+  return x.song_title ?? x.title ?? '(이름 없음)'
+}
+
 export function reservationToItem(r: Reservation): ScheduleItem {
   return {
     key: `r-${r.id}`,
     kind: 'reservation',
-    title: r.song_title,
+    title: displayTitle(r),
     space: r.space,
     start: parseLocal(r.start_at),
     end: parseLocal(r.end_at),
@@ -37,7 +42,7 @@ export function expandRegularPractices(
       items.push({
         key: `p-${p.id}-${dayKey}`,
         kind: 'regular',
-        title: p.title,
+        title: displayTitle(p),
         space: p.space,
         start,
         end,
