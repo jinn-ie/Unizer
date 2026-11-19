@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { SchedulePage } from './components/SchedulePage'
 import { DataPage } from './components/DataPage'
+import { FeedbackPage } from './components/FeedbackPage'
 
-type Tab = 'schedule' | 'songs' | 'members'
+type Tab = 'schedule' | 'songs' | 'members' | 'feedback'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'schedule', label: '연습 공간' },
   { key: 'songs', label: '곡' },
   { key: 'members', label: '부원' },
+  { key: 'feedback', label: '의견 보내기' },
 ]
 
 export default function App() {
@@ -38,7 +40,9 @@ export default function App() {
         ))}
       </nav>
 
-      {tab === 'schedule' ? <SchedulePage /> : <DataPage key={tab} view={tab} />}
+      {tab === 'schedule' && <SchedulePage />}
+      {(tab === 'songs' || tab === 'members') && <DataPage key={tab} view={tab} />}
+      {tab === 'feedback' && <FeedbackPage />}
     </div>
   )
 }

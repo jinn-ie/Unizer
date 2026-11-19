@@ -116,3 +116,8 @@ export interface NoteInput {
   date_on: string
   text: string
 }
+
+// 의견 보내기 (백엔드 schemas.py 에 만들 FeedbackIn 과 같은 모양)
+export interface FeedbackInput {
+  text: string
+}

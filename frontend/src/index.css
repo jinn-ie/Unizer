@@ -893,6 +893,15 @@ button.song-times.is-empty.is-open {
   opacity: 0.6;
 }
 
+/* ── 의견 보내기 ───────────────────────── */
+.feedback-hint {
+  margin: 0 2px 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  word-break: keep-all; /* 한글을 단어 단위로 줄바꿈 */
+}
+
 /* ── 곡 등록 (붙여넣기) ───────────────── */
 .import-hint {
   margin: -4px 2px 10px;

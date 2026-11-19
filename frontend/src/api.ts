@@ -1,4 +1,5 @@
 import type {
+  FeedbackInput,
   ImportSong,
   Member,
   Note,
@@ -97,4 +98,9 @@ export function createNote(input: NoteInput) {
 
 export function deleteNote(id: number) {
   return sendJson<void>(`/api/notes/${id}`, 'DELETE')
+}
+
+// ── 의견 보내기 ──
+export function sendFeedback(input: FeedbackInput) {
+  return sendJson<unknown>('/api/feedback', 'POST', input)
 }
