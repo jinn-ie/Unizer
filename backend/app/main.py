@@ -6,11 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Member, Note, RegularPractice, Reservation, Song, SongMember  # 테이블
+from app.models import Member, Note, RegularPractice, Reservation, Song, SongMember, Feedback  # 테이블
 
 from app.schemas import (  # 스키마
     ImportSong, MemberRead, NoteIn, NoteRead, PreviewSong, RegularPracticeIn, RegularPracticeRead,
-    ReservationIn, ReservationRead, SongImportText, SongMemberRead, SongRead,
+    ReservationIn, ReservationRead, SongImportText, SongMemberRead, SongRead, FeedbackIn, FeedbackRead
 )
 from app.song_import import build_preview
 
@@ -247,3 +247,12 @@ def delete_note(note_id: int, db: Annotated[Session, Depends(get_db)]):
         raise HTTPException(404, "해당하는 메모가 없어요.")
     db.delete(note)
     db.commit()
+
+# ── 의견 보내기 ──
+@app.post("/api/feedback", response_model=FeedbackRead, status_code=201)
+def send_feedback(data: FeedbackIn, db: Annotated[Session, Depends(get_db)]):
+    feedback = Feedback(**data.model_dump())
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+    return feedback

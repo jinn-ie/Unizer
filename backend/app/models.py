@@ -92,3 +92,10 @@ class Note(Base):
     date_on: Mapped[date]                                            # 메모가 붙은 날짜
     text: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(default=now_kst)    # 남긴 시각
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(default=now_kst)

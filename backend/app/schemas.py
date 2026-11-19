@@ -126,3 +126,16 @@ class NoteRead(BaseModel):
     date_on: date
     text: str
     created_at: datetime
+
+class FeedbackIn(BaseModel):
+    """의견 보낼 때 받는 모양"""
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    text: str = Field(min_length=1, max_length=1000)
+
+class FeedbackRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    text: str
+    created_at: datetime
