@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TouchEvent } from 'react'
-import { fetchRegularPractices, fetchReservations } from '../api'
-import type { RegularPractice, Reservation } from '../types'
+import { fetchNotes, fetchRegularPractices, fetchReservations } from '../api'
+import type { Note, RegularPractice, Reservation } from '../types'
 import { SPACES } from '../lib/spaces'
 import {
   addDays,
@@ -18,7 +18,7 @@ import { DaySheet } from './DaySheet'
 type LoadState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; reservations: Reservation[]; regulars: RegularPractice[] }
+  | { status: 'ready'; reservations: Reservation[]; regulars: RegularPractice[]; notes: Note[] }
 
 // 주소에 ?week=2026-11-09 가 있으면 그 주를 보여줌 (카톡으로 특정 주 공유용)
 function initialWeek(): Date {
@@ -33,14 +33,18 @@ export function SchedulePage() {
   const [now, setNow] = useState(() => new Date())
   const [sheet, setSheet] = useState<{ day: Date; focusKey?: string } | null>(null)
 
-  // 리더 연습 + 정규연습 API 를 동시에 호출하고, 둘 다 오면 화면에 반영
+  // 리더 연습 + 정규연습 + 메모 API 를 동시에 호출하고, 다 오면 화면에 반영
+  // 메모는 부가 기능이라, 실패해도 빈 목록으로 두고 캘린더는 그대로 보여줌
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
       fetchReservations(controller.signal),
       fetchRegularPractices(controller.signal),
+      fetchNotes(controller.signal).catch(() => [] as Note[]),
     ])
-      .then(([reservations, regulars]) => setLoad({ status: 'ready', reservations, regulars }))
+      .then(([reservations, regulars, notes]) =>
+        setLoad({ status: 'ready', reservations, regulars, notes }),
+      )
       .catch((e) => {
         if (!controller.signal.aborted) {
           console.error(e)
@@ -79,6 +83,10 @@ export function SchedulePage() {
     return items.filter((it) => it.start.getTime() < e && it.end.getTime() > s).length
   }, [items, weekStart])
 
+  // 메모가 있는 날짜 ("2026-11-19") 모음 → 캘린더 날짜 아래 점 표시
+  const notes = useMemo(() => (load.status === 'ready' ? load.notes : []), [load])
+  const noteDays = useMemo(() => new Set(notes.map((n) => n.date_on)), [notes])
+
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
 
   // 좌우 스와이프로 주 이동
@@ -98,6 +106,27 @@ export function SchedulePage() {
 
   return (
     <>
+      <aside className="notice" aria-label="안내">
+        <ul>
+          <li>
+            <span>서로 배려하면서 잡아주세요</span>
+          </li>
+          <li>
+            <span>
+              대회의실은 타동아리의 예약도 확인해주세요{' '}
+              <a
+                className="notice-link"
+                href="https://space.pusan.ac.kr/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                교육공간 예약시스템
+              </a>
+            </span>
+          </li>
+        </ul>
+      </aside>
+
       <nav className="week-nav" aria-label="주 이동">
         <button type="button" className="icon-btn" onClick={() => shiftWeek(-1)} aria-label="이전 주">
           <Chevron dir="left" />
@@ -132,6 +161,7 @@ export function SchedulePage() {
         <WeekCalendar
           weekStart={weekStart}
           items={items}
+          noteDays={noteDays}
           now={now}
           onSelectDay={(day, focusKey) => setSheet({ day, focusKey })}
         />
@@ -175,6 +205,7 @@ export function SchedulePage() {
           day={sheet.day}
           focusKey={sheet.focusKey}
           items={items}
+          notes={notes.filter((n) => n.date_on === toDateKey(sheet.day))}
           onClose={() => setSheet(null)}
           onChanged={(focusKey) => {
             // 추가/수정/삭제 후 다시 불러오고, 바뀐 연습을 목록에서 강조

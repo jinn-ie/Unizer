@@ -2,7 +2,13 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { ScheduleItem } from '../types'
 import { SPACES, SPACE_INDEX } from '../lib/spaces'
-import { addDays, formatMinutes, isSameDay, WEEKDAYS } from '../lib/date'
+import {
+  addDays,
+  formatMinutes,
+  isSameDay,
+  toDateKey,
+  WEEKDAYS,
+} from '../lib/date'
 
 const SLOT_MIN = 30
 const DAY_MIN = 24 * 60
@@ -23,11 +29,12 @@ interface Segment {
 interface Props {
   weekStart: Date
   items: ScheduleItem[]
+  noteDays: Set<string> // 메모가 있는 날짜 ("2026-11-19")
   now: Date
   onSelectDay: (day: Date, focusKey?: string) => void
 }
 
-export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
+export function WeekCalendar({ weekStart, items, noteDays, now, onSelectDay }: Props) {
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart],
@@ -127,7 +134,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
             <button
               key={i}
               type="button"
-              className={`cal-day-head${isToday ? ' is-today' : ''}`}
+              className={`cal-day-head${isToday ? ' is-today' : ''}${noteDays.has(toDateKey(d)) ? ' has-note' : ''}`}
               onClick={() => onSelectDay(d)}
             >
               <span className="cal-dow">{WEEKDAYS[i]}</span>
@@ -171,9 +178,10 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
                 className={`cal-day${isToday ? ' is-today' : ''}`}
                 onClick={() => onSelectDay(d)}
               >
-                <i className="cal-lane-line" style={{ left: '25%' }} />
-                <i className="cal-lane-line" style={{ left: '50%' }} />
-                <i className="cal-lane-line" style={{ left: '75%' }} />
+                {/* 날짜 칸 양옆에 여백(--gut)을 두고, 그 안을 공간 4줄로 나눔 */}
+                {[1, 2, 3].map((n) => (
+                  <i key={n} className="cal-lane-line" style={{ '--lane': n } as CSSProperties} />
+                ))}
 
                 {segments
                   .filter((s) => s.dayIndex === i)
@@ -187,7 +195,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
                         {
                           top: toY(s.startMin) + 1,
                           height: Math.max(toY(s.endMin) - toY(s.startMin) - 2, 4),
-                          left: `calc(${s.lane * 25}% + 1.5px)`,
+                          '--lane': s.lane,
                           '--c': SPACES[s.lane].color,
                         } as CSSProperties
                       }

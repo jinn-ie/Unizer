@@ -15,8 +15,8 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '')
 
 const choiceText = (c: PracticeChoice) => (c.kind === 'song' ? c.song.title : c.title)
 
-// 곡명 자동완성: 타이핑하면 일치하는 곡이 아래로 주르륵 뜨고,
-// 목록에 없는 이름이면 맨 아래 '공통 일정으로 추가' 를 고를 수 있음
+// 곡명 자동완성: 타이핑하면 그 글자로 시작하는 곡이 아래로 주르륵 뜨고,
+// 목록에 없는 이름이면 맨 아래 '일정 추가' 를 고를 수 있음
 export function SongInput({ songs, selected, onSelect }: Props) {
   const [text, setText] = useState(selected ? choiceText(selected) : '')
   const [open, setOpen] = useState(false)
@@ -25,9 +25,10 @@ export function SongInput({ songs, selected, onSelect }: Props) {
 
   const typed = text.trim()
 
+  // 아무것도 안 쳤으면 목록 없음, 쳤으면 그 글자로 '시작하는' 곡만
   const matches = useMemo(() => {
     const q = norm(text)
-    return q ? songs.filter((s) => norm(s.title).includes(q)) : songs
+    return q ? songs.filter((s) => norm(s.title).startsWith(q)) : []
   }, [songs, text])
 
   // 친 글자가 곡명과 정확히 같지 않으면 공통 일정 선택지를 보여줌
@@ -92,12 +93,6 @@ export function SongInput({ songs, selected, onSelect }: Props) {
           }
         }}
       />
-      {selected && (
-        <span className="song-check" aria-label="선택됨">
-          {selected.kind === 'title' && <em>공통 일정</em>}
-          <b>✓</b>
-        </span>
-      )}
 
       {showList && (
         <ul className="song-list" role="listbox">
@@ -130,7 +125,7 @@ export function SongInput({ songs, selected, onSelect }: Props) {
                 +
               </span>
               <span>
-                ‘{typed}’ <small>공통 일정으로 추가</small>
+                ‘{typed}’ <small>일정 추가</small>
               </span>
             </li>
           )}

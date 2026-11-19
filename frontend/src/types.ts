@@ -8,6 +8,8 @@ export interface Reservation {
   space: string // "동방" | "대회의실1" | "대회의실2" | "바깥거울"
   start_at: string // "2026-11-18T19:00:00" (한국 시간, 타임존 없음)
   end_at: string
+  created_at: string | null // 등록 시각 (예전 연습은 null)
+  updated_at: string | null // 마지막 수정 시각 (수정한 적 없으면 null)
 }
 
 // 백엔드 schemas.py 의 RegularPracticeRead 와 같은 모양 (매주 반복 규칙)
@@ -63,4 +65,54 @@ export interface ReservationInput {
   space: string
   start_at: string // "2026-11-18T19:00:00"
   end_at: string
+}
+
+// ── 곡 일괄 등록 (백엔드 schemas.py 의 PreviewSong / ImportSong 과 같은 모양) ──
+export interface PreviewPerson {
+  name: string
+  leader: boolean
+  candidates: { id: number; gen: number }[] // 0명: 없음 / 1명: 확정 / 2명 이상: 동명이인
+}
+
+export interface ExistingSong {
+  id: number
+  title: string
+  members: { name: string; gen: number; leader: boolean }[]
+}
+
+export interface PreviewSong {
+  title: string
+  people: PreviewPerson[]
+  existing: ExistingSong[] // 제목이 같은 기존 곡
+}
+
+export interface ImportSong {
+  title: string
+  members: { member_id: number; leader: boolean }[]
+}
+
+// 정규연습 등록 때 보내는 값 (백엔드에 만들 RegularPracticeIn 과 같은 모양)
+export interface RegularPracticeInput {
+  song_id: number | null
+  title: string | null
+  weekday: number // 0=일 … 6=토
+  start_time: string // "18:00:00"
+  end_time: string
+  space: string
+  starts_on: string // "2026-11-19" (포함)
+  ends_on: string // "2026-11-30" (포함)
+}
+
+// 날짜별 메모 (백엔드 schemas.py 의 NoteRead 와 같은 모양)
+export interface Note {
+  id: number
+  date_on: string // "2026-11-19" 메모가 붙은 날짜
+  text: string
+  created_at: string // 남긴 시각
+}
+
+// 메모 남길 때 보내는 값 (NoteIn)
+export interface NoteInput {
+  date_on: string
+  text: string
 }

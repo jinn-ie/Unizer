@@ -77,6 +77,18 @@ export function formatWeekRange(weekStart: Date): string {
   return `${left} – ${right}`
 }
 
+/** "2026-11-19T14:30:12.357" → "2026/11/19 14:30:12" */
+export function formatStamp(iso: string): string {
+  const d = parseLocal(iso)
+  const date = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+  return `${date} ${formatTime(d)}:${pad(d.getSeconds())}`
+}
+
+/** 등록 시각 → "등록 2026/11/19 14:30:12" (예전 연습은 기록 없음) */
+export function formatCreated(iso: string | null): string {
+  return iso ? `등록 ${formatStamp(iso)}` : '등록 시간 기록 없음'
+}
+
 /** "11월 18일 (수)" */
 export function formatDayTitle(d: Date): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[weekdayIndex(d)]})`

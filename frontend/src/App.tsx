@@ -2,7 +2,13 @@ import { useState } from 'react'
 import { SchedulePage } from './components/SchedulePage'
 import { DataPage } from './components/DataPage'
 
-type Tab = 'schedule' | 'data'
+type Tab = 'schedule' | 'songs' | 'members'
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'schedule', label: '연습 공간' },
+  { key: 'songs', label: '곡' },
+  { key: 'members', label: '부원' },
+]
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('schedule')
@@ -13,32 +19,26 @@ export default function App() {
         <img src="/logo.png" alt="UCDC" className="top-logo" />
         <div className="top-title">
           <h1>Unizer</h1>
-          <p>똑똑하게 춤춰라 유디 !</p>
+          <p>편하게 춤춰라 유디 !</p>
         </div>
       </header>
 
       <nav className="tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'schedule'}
-          className={`tab${tab === 'schedule' ? ' is-active' : ''}`}
-          onClick={() => setTab('schedule')}
-        >
-          연습 공간
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'data'}
-          className={`tab${tab === 'data' ? ' is-active' : ''}`}
-          onClick={() => setTab('data')}
-        >
-          내부 데이터<small>(임시)</small>
-        </button>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            className={`tab${tab === t.key ? ' is-active' : ''}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
       </nav>
 
-      {tab === 'schedule' ? <SchedulePage /> : <DataPage />}
+      {tab === 'schedule' ? <SchedulePage /> : <DataPage key={tab} view={tab} />}
     </div>
   )
 }

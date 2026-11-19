@@ -1,20 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { ScheduleItem } from '../types'
+import type { Note, ScheduleItem } from '../types'
 import { spaceInfo, SPACE_INDEX } from '../lib/spaces'
-import { addDays, formatDayTitle, formatDuration, formatTime } from '../lib/date'
+import {
+  addDays,
+  formatCreated,
+  formatDayTitle,
+  formatStamp,
+  formatTime,
+} from '../lib/date'
 import { deleteReservation } from '../api'
 import { PracticeBox } from './PracticeBox'
+import { NoteForm, NoteList } from './NoteList'
 
 interface Props {
   day: Date
   focusKey?: string
   items: ScheduleItem[]
+  notes: Note[] // 이 날의 메모
   onClose: () => void
   onChanged: (focusKey?: string) => void // 추가/수정/삭제 후 다시 불러오기
 }
 
-export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
+export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Props) {
   const focusRef = useRef<HTMLLIElement>(null)
   const [activeKey, setActiveKey] = useState<string | null>(null) // 수정/삭제 버튼이 열린 보충
   const [editKey, setEditKey] = useState<string | null>(null) // 입력창으로 바뀐 보충
@@ -48,10 +56,11 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
     const dayEnd = addDays(day, 1).getTime()
     return items
       .filter((it) => it.start.getTime() < dayEnd && it.end.getTime() > dayStart)
+      // 공간 순서(동방 → 대회의실1 → 대회의실2 → 바깥거울), 같은 공간 안에서는 시간순
       .sort(
         (a, b) =>
-          a.start.getTime() - b.start.getTime() ||
-          (SPACE_INDEX.get(a.space) ?? 9) - (SPACE_INDEX.get(b.space) ?? 9),
+          (SPACE_INDEX.get(a.space) ?? 9) - (SPACE_INDEX.get(b.space) ?? 9) ||
+          a.start.getTime() - b.start.getTime(),
       )
   }, [day, items])
 
@@ -89,8 +98,10 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
           <p className="sheet-empty">이 날은 연습이 없어요</p>
         ) : (
           <ul className="sheet-list">
-            {dayItems.map((it) => {
+            {dayItems.map((it, idx) => {
               const space = spaceInfo(it.space)
+              // 앞 연습과 공간이 다르면 위에 구분선
+              const newSpace = idx > 0 && dayItems[idx - 1].space !== it.space
               const focused = it.key === focusKey
               const regular = it.kind === 'regular'
               const r = it.reservation // 보충만 수정/삭제 가능 (정규연습은 X)
@@ -99,7 +110,7 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
               // 수정 중: 같은 자리에 기존 값이 채워진 입력 박스
               if (r && it.key === editKey) {
                 return (
-                  <li key={it.key} className="sheet-edit">
+                  <li key={it.key} className={`sheet-edit${newSpace ? ' is-new-space' : ''}`}>
                     <PracticeBox
                       day={day}
                       editing={r}
@@ -118,19 +129,22 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
                 <li
                   key={it.key}
                   ref={focused ? focusRef : undefined}
-                  className={`sheet-item${focused || active ? ' is-focused' : ''}${r ? ' is-tappable' : ''}`}
+                  className={`sheet-item${focused || active ? ' is-focused' : ''}${r ? ' is-tappable' : ''}${newSpace ? ' is-new-space' : ''}`}
                   onClick={r ? () => toggleActive(it.key) : undefined}
                 >
                   <span className="sheet-bar" style={{ '--c': space.color } as CSSProperties} />
+                  {/* 시간 | 곡명 (시간이 먼저, 더 크게) */}
                   <div className="sheet-main">
+                    <span className="sheet-time">
+                      {formatTime(it.start)}–{formatTime(it.end)}
+                    </span>
+                    <span className="sheet-sep" aria-hidden>
+                      |
+                    </span>
                     <strong className="sheet-song">
                       {regular && <span className="sheet-tag">정규</span>}
                       {it.title}
                     </strong>
-                    <span className="sheet-time">
-                      {formatTime(it.start)} – {formatTime(it.end)}
-                      <span className="sheet-dur"> · {formatDuration(it.end.getTime() - it.start.getTime())}</span>
-                    </span>
                   </div>
                   <span className="sheet-space" style={{ color: space.color, borderColor: space.color }}>
                     {space.label}
@@ -138,6 +152,11 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
 
                   {active && (
                     <div className="sheet-actions" onClick={(e) => e.stopPropagation()}>
+                      <p className="sheet-created">
+                        {formatCreated(r.created_at)}
+                        {/* 수정한 적 있을 때만: 오른쪽에 | 로 구분해서 최종 수정일시 */}
+                        {r.updated_at && ` | 수정 ${formatStamp(r.updated_at)}`}
+                      </p>
                       <button
                         type="button"
                         className="act-btn"
@@ -165,7 +184,14 @@ export function DaySheet({ day, focusKey, items, onClose, onChanged }: Props) {
           </ul>
         )}
 
-        <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
+        {/* 메모 목록: 연습 목록 바로 아래 */}
+        <NoteList notes={notes} onChanged={() => onChanged()} />
+
+        {/* 연습 추가 박스 + 메모 입력칸: 목록을 스크롤해도 보드 아래에 항상 붙어 있음 */}
+        <div className="sheet-add">
+          <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
+          <NoteForm day={day} onChanged={() => onChanged()} />
+        </div>
       </section>
     </div>
   )

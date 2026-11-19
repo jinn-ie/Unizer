@@ -1,6 +1,11 @@
 import type {
+  ImportSong,
   Member,
+  Note,
+  NoteInput,
+  PreviewSong,
   RegularPractice,
+  RegularPracticeInput,
   Reservation,
   ReservationInput,
   Song,
@@ -64,4 +69,32 @@ export function updateReservation(id: number, input: ReservationInput) {
 
 export function deleteReservation(id: number) {
   return sendJson<void>(`/api/reservations/${id}`, 'DELETE')
+}
+
+// 붙여넣은 곡 글자를 파싱해서 확인용으로 받아옴 (저장 X)
+export function previewSongImport(text: string) {
+  return sendJson<PreviewSong[]>('/api/songs/import/preview', 'POST', { text })
+}
+
+// 확인이 끝난 곡들을 한꺼번에 저장
+export function importSongs(songs: ImportSong[]) {
+  return sendJson<Song[]>('/api/songs/import', 'POST', songs)
+}
+
+// 정규연습 여러 개(요일별)를 한꺼번에 등록
+export function createRegularPractices(items: RegularPracticeInput[]) {
+  return sendJson<RegularPractice[]>('/api/regular-practices', 'POST', items)
+}
+
+// ── 날짜별 메모 ──
+export function fetchNotes(signal?: AbortSignal) {
+  return getJson<Note[]>('/api/notes', signal)
+}
+
+export function createNote(input: NoteInput) {
+  return sendJson<Note>('/api/notes', 'POST', input)
+}
+
+export function deleteNote(id: number) {
+  return sendJson<void>(`/api/notes/${id}`, 'DELETE')
 }
