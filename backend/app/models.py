@@ -1,12 +1,18 @@
 # 테이블 정의
 
 import enum
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import Enum as SAEnum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+KST = timezone(timedelta(hours=9))
+
+def now_kst() -> datetime:
+    """지금 한국 시각 (다른 시간들처럼 타임존 정보 없이 저장)"""
+    return datetime.now(KST).replace(tzinfo=None)
 
 class Space(enum.StrEnum):
     DONGBANG = "동방"
@@ -68,9 +74,21 @@ class Reservation(Base):
     space: Mapped[Space] = mapped_column(SAEnum(Space, native_enum=False, length=30))
     start_at: Mapped[datetime]
     end_at: Mapped[datetime]
+    created_at: Mapped[datetime | None] = mapped_column(default=now_kst)
+    updated_at: Mapped[datetime | None] = mapped_column(onupdate=now_kst)  # 마지막 수정 시각 (수정 전엔 None)
 
     song: Mapped["Song | None"] = relationship(lazy="joined")
 
     @property
     def song_title(self) -> str | None:
         return self.song.title if self.song else None
+
+
+# 날짜별 메모 (예약으로 담기 어려운 내용을 줄글로)
+class Note(Base):
+    __tablename__ = "notes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date_on: Mapped[date]                                            # 메모가 붙은 날짜
+    text: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(default=now_kst)    # 남긴 시각

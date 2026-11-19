@@ -6,10 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Member, RegularPractice, Reservation, Song, SongMember  # 테이블
+from app.models import Member, Note, RegularPractice, Reservation, Song, SongMember  # 테이블
+
 from app.schemas import (  # 스키마
-    MemberRead, RegularPracticeRead, ReservationIn, ReservationRead, SongMemberRead, SongRead,
+    ImportSong, MemberRead, NoteIn, NoteRead, PreviewSong, RegularPracticeIn, RegularPracticeRead,
+    ReservationIn, ReservationRead, SongImportText, SongMemberRead, SongRead,
 )
+from app.song_import import build_preview
+
 
 def find_regular_clash(db: Session, data: ReservationIn):
     """같은 공간의 정규연습 중 시간이 겹치는 게 있으면 (정규연습, 시작, 끝)을 돌려줌"""
@@ -70,6 +74,43 @@ def check_reservation(db: Session, data: ReservationIn, exclude_id: int | None =
         raise HTTPException(
             409, f"{data.space}에 이미 '{name}' 연습이 있어요. ({clash.start_at:%H:%M}~{clash.end_at:%H:%M})"
         )
+
+WEEKDAY_NAMES = "일월화수목금토"   # WEEKDAY_NAMES[1] → "월"
+
+
+def check_regular(db: Session, data: RegularPracticeIn):
+    """정규연습 등록 전에 검사. 문제가 있으면 HTTPException 으로 멈춤"""
+    # 1. 시간 / 기간 순서
+    if data.start_time >= data.end_time:
+        raise HTTPException(400, "끝나는 시간은 시작 시간보다 늦어야 해요.")
+    if data.starts_on > data.ends_on:
+        raise HTTPException(400, "적용 기간의 끝이 시작보다 빨라요.")
+
+    # 2. 곡 / 공통 일정 중 딱 하나만
+    if (data.song_id is None) == (data.title is None):
+        raise HTTPException(400, "곡과 일정 이름 중 하나만 입력해 주세요.")
+    if data.song_id is not None and db.get(Song, data.song_id) is None:
+        raise HTTPException(404, "해당하는 곡이 없어요.")
+
+    # 3. 같은 공간 · 같은 요일 · 기간이 겹치고 · 시간이 겹치는 정규연습이 있는지
+    clash = db.scalars(
+        select(RegularPractice).where(
+            RegularPractice.space == data.space,
+            RegularPractice.weekday == data.weekday,
+            RegularPractice.starts_on <= data.ends_on,      # 기간 겹침
+            RegularPractice.ends_on >= data.starts_on,
+            RegularPractice.start_time < data.end_time,     # 시간 겹침
+            RegularPractice.end_time > data.start_time,
+        )
+    ).first()
+    if clash:
+        name = clash.song_title or clash.title
+        raise HTTPException(
+            409,
+            f"{WEEKDAY_NAMES[data.weekday]}요일 {data.space}에 이미 '{name}' 정규연습이 있어요. "
+            f"({clash.start_time:%H:%M}~{clash.end_time:%H:%M})",
+        )
+
   
 # FastAPI 앱 객체. uvicorn 이 이 객체를 찾아서 실행한다. (app.main:app)
 app = FastAPI(title="dance-ud API")
@@ -132,4 +173,77 @@ def delete_reservation(reservation_id: int, db: Annotated[Session, Depends(get_d
     if reservation is None:
         raise HTTPException(404, "해당하는 보충이 없어요.")
     db.delete(reservation)
+    db.commit()
+
+@app.post("/api/songs/import/preview", response_model=list[PreviewSong])
+def preview_song_import(data: SongImportText, db: Annotated[Session, Depends(get_db)]):
+    """붙여넣은 글자를 파싱해서 확인용으로 돌려줌 (DB 에 저장 안 함)"""
+    return build_preview(db, data.text)
+
+
+@app.post("/api/songs/import", response_model=list[SongRead], status_code=201)
+def import_songs(songs: list[ImportSong], db: Annotated[Session, Depends(get_db)]):
+    """확인이 끝난 곡들을 한꺼번에 저장. 하나라도 문제가 있으면 전부 저장 안 함"""
+    created = []
+    for s in songs:
+        ids = [m.member_id for m in s.members]
+        if len(set(ids)) != len(ids):
+            raise HTTPException(400, f"'{s.title}'에 같은 부원이 두 번 들어 있어요.")
+        for m in s.members:
+            if db.get(Member, m.member_id) is None:
+                raise HTTPException(404, f"'{s.title}'에 없는 부원 번호({m.member_id})가 있어요.")
+
+        song = Song(title=s.title)
+        db.add(song)
+        db.add_all(SongMember(song=song, member_id=m.member_id, leader=m.leader) for m in s.members)
+        created.append(song)
+
+    db.commit()                 # 여기까지 오면 전부 한 번에 저장
+    for song in created:
+        db.refresh(song)
+    return created
+
+@app.post("/api/regular-practices", response_model=list[RegularPracticeRead], status_code=201)
+def create_regular_practices(
+    items: list[RegularPracticeIn], db: Annotated[Session, Depends(get_db)]
+):
+    """요일별 정규연습 여러 개를 한꺼번에 저장. 하나라도 문제가 있으면 전부 저장 안 함"""
+    if not items:
+        raise HTTPException(400, "등록할 시간표가 없어요.")
+
+    created = []
+    for data in items:
+        check_regular(db, data)
+        practice = RegularPractice(**data.model_dump())
+        db.add(practice)
+        created.append(practice)
+
+    db.commit()
+    for practice in created:
+        db.refresh(practice)
+    return created
+
+
+# ── 날짜별 메모 (수정 기능 없음: 지우고 다시 남기기) ──
+@app.get("/api/notes", response_model=list[NoteRead])
+def list_notes(db: Annotated[Session, Depends(get_db)]):
+    stmt = select(Note).order_by(Note.date_on, Note.created_at)
+    return db.scalars(stmt).all()
+
+
+@app.post("/api/notes", response_model=NoteRead, status_code=201)
+def create_note(data: NoteIn, db: Annotated[Session, Depends(get_db)]):
+    note = Note(**data.model_dump())
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return note
+
+
+@app.delete("/api/notes/{note_id}", status_code=204)
+def delete_note(note_id: int, db: Annotated[Session, Depends(get_db)]):
+    note = db.get(Note, note_id)
+    if note is None:
+        raise HTTPException(404, "해당하는 메모가 없어요.")
+    db.delete(note)
     db.commit()
