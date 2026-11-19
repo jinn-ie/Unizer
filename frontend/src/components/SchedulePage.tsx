@@ -83,9 +83,7 @@ export function SchedulePage() {
     return items.filter((it) => it.start.getTime() < e && it.end.getTime() > s).length
   }, [items, weekStart])
 
-  // 메모가 있는 날짜 ("2026-11-19") 모음 → 캘린더 날짜 아래 점 표시
   const notes = useMemo(() => (load.status === 'ready' ? load.notes : []), [load])
-  const noteDays = useMemo(() => new Set(notes.map((n) => n.date_on)), [notes])
 
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
 
@@ -161,7 +159,6 @@ export function SchedulePage() {
         <WeekCalendar
           weekStart={weekStart}
           items={items}
-          noteDays={noteDays}
           now={now}
           onSelectDay={(day, focusKey) => setSheet({ day, focusKey })}
         />

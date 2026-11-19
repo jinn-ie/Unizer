@@ -6,7 +6,6 @@ import {
   addDays,
   formatMinutes,
   isSameDay,
-  toDateKey,
   WEEKDAYS,
 } from '../lib/date'
 
@@ -29,12 +28,11 @@ interface Segment {
 interface Props {
   weekStart: Date
   items: ScheduleItem[]
-  noteDays: Set<string> // 메모가 있는 날짜 ("2026-11-19")
   now: Date
   onSelectDay: (day: Date, focusKey?: string) => void
 }
 
-export function WeekCalendar({ weekStart, items, noteDays, now, onSelectDay }: Props) {
+export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart],
@@ -134,7 +132,7 @@ export function WeekCalendar({ weekStart, items, noteDays, now, onSelectDay }: P
             <button
               key={i}
               type="button"
-              className={`cal-day-head${isToday ? ' is-today' : ''}${noteDays.has(toDateKey(d)) ? ' has-note' : ''}`}
+              className={`cal-day-head${isToday ? ' is-today' : ''}`}
               onClick={() => onSelectDay(d)}
             >
               <span className="cal-dow">{WEEKDAYS[i]}</span>
