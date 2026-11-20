@@ -3,7 +3,7 @@
 import enum
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import Enum as SAEnum, ForeignKey, String
+from sqlalchemy import CheckConstraint, Enum as SAEnum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -22,6 +22,7 @@ class Space(enum.StrEnum):
 
 class Member(Base):
     __tablename__ = "members"
+    __table_args__ = (UniqueConstraint("gen", "name", name="uq_member_gen_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     gen: Mapped[int]
@@ -47,6 +48,11 @@ class SongMember(Base):
 # 매주 반복되는 정규연습 (곡 연습 + 기본기 같은 공통 일정)
 class RegularPractice(Base):
     __tablename__ = "regular_practices"
+    __table_args__ = (
+        CheckConstraint("starts_on <= ends_on", name="ck_rp_period"),
+        CheckConstraint("weekday BETWEEN 0 AND 6", name="ck_rp_weekday"),
+        CheckConstraint("(song_id IS NULL) <> (title IS NULL)", name="ck_rp_song_or_title"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     song_id: Mapped[int | None] = mapped_column(ForeignKey("songs.id"))
@@ -67,6 +73,10 @@ class RegularPractice(Base):
 # 보충
 class Reservation(Base):
     __tablename__ = "reservations"
+    __table_args__ = (
+        CheckConstraint("start_at < end_at", name="ck_res_time"),
+        CheckConstraint("(song_id IS NULL) <> (title IS NULL)", name="ck_res_song_or_title"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     song_id: Mapped[int | None] = mapped_column(ForeignKey("songs.id"))
