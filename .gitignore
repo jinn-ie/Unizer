@@ -13,6 +13,7 @@ __pycache__/
 # 로컬 DB 파일
 *.db
 *.sqlite3
+*.bak
 
 # Node / 프론트엔드
 node_modules/
