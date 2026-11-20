@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TouchEvent } from 'react'
-import { fetchNotes, fetchRegularPractices, fetchReservations } from '../api'
-import type { Note, RegularPractice, Reservation } from '../types'
-import { SPACES } from '../lib/spaces'
+import { fetchNotes, fetchRegularPractices, fetchReservations } from '../../api'
+import type { Note, RegularPractice, Reservation } from '../../types'
+import { SPACES } from '../../lib/spaces'
 import {
   addDays,
   formatWeekRange,
@@ -10,10 +10,11 @@ import {
   parseDateKey,
   startOfWeek,
   toDateKey,
-} from '../lib/date'
-import { expandRegularPractices, reservationToItem } from '../lib/schedule'
+} from '../../lib/date'
+import { expandRegularPractices, reservationToItem } from '../../lib/schedule'
 import { WeekCalendar } from './WeekCalendar'
 import { DaySheet } from './DaySheet'
+import './SchedulePage.css'
 
 type LoadState =
   | { status: 'loading' }

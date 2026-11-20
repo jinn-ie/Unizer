@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { SchedulePage } from './components/SchedulePage'
-import { DataPage } from './components/DataPage'
-import { FeedbackPage } from './components/FeedbackPage'
+import { SchedulePage } from './pages/schedule/SchedulePage'
+import { DataPage } from './pages/data/DataPage'
+import { FeedbackPage } from './pages/feedback/FeedbackPage'
 
 type Tab = 'schedule' | 'songs' | 'members' | 'feedback'
 

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { createNote, deleteNote } from '../api'
-import type { Note } from '../types'
-import { formatStamp, toDateKey } from '../lib/date'
-import { Toast } from './Toast'
+import { createNote, deleteNote } from '../../api'
+import type { Note } from '../../types'
+import { formatStamp, toDateKey } from '../../lib/date'
+import { Toast } from '../../components/Toast'
+import './NoteList.css'
 
 type ToastState = { id: number; message: string } | null
 

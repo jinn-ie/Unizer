@@ -1,0 +1,101 @@
+/* ── 날짜 보드 메모 (댓글처럼) ───────────── */
+.notes {
+  margin-top: 12px;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.note-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-body p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.note-body span {
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.note-del {
+  flex-shrink: 0;
+  min-width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.note-del.is-confirm {
+  background: var(--red);
+  color: var(--white);
+}
+
+.note-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px; /* 고정 영역 안에서 연습 등록 박스 아래 */
+}
+
+.note-form input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--white);
+  font: inherit;
+  font-size: 10.5px; /* 안내 문구와 입력 글씨를 같은 크기로 (16px 미만이라 아이폰은 입력할 때 확대됨) */
+  outline: none;
+}
+
+.note-form input::placeholder {
+  color: var(--faint);
+}
+
+.note-form input:focus {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.note-form button {
+  flex-shrink: 0;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.note-form button:disabled {
+  background: var(--surface);
+  color: var(--faint);
+  cursor: default;
+}

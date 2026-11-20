@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { importSongs, previewSongImport } from '../api'
-import type { ImportSong, PreviewSong } from '../types'
-import { Toast } from './Toast'
+import { importSongs, previewSongImport } from '../../api'
+import type { ImportSong, PreviewSong } from '../../types'
+import { Toast } from '../../components/Toast'
+import './SongImport.css'
 
 interface Props {
   onImported: () => void // 등록 후 아래 부원/곡 목록 다시 불러오기

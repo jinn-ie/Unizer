@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { sendFeedback } from '../api'
-import { Toast } from './Toast'
+import { sendFeedback } from '../../api'
+import { Toast } from '../../components/Toast'
+import './FeedbackPage.css'
 
 type ToastState = { id: number; message: string; kind: 'error' | 'success' } | null
 

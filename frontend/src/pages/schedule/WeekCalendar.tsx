@@ -1,13 +1,14 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { ScheduleItem } from '../types'
-import { SPACES, SPACE_INDEX } from '../lib/spaces'
+import type { ScheduleItem } from '../../types'
+import { SPACES, SPACE_INDEX } from '../../lib/spaces'
 import {
   addDays,
   formatMinutes,
   isSameDay,
   WEEKDAYS,
-} from '../lib/date'
+} from '../../lib/date'
+import './WeekCalendar.css'
 
 const SLOT_MIN = 30
 const DAY_MIN = 24 * 60

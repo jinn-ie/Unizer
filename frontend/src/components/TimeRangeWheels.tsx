@@ -1,4 +1,5 @@
 import { WheelPicker } from './WheelPicker'
+import './TimeRangeWheels.css'
 
 interface Props {
   start: number // 그 날 0시부터 몇 분 (예: 18:00 → 1080)

@@ -1,0 +1,55 @@
+/* ── 스크롤 휠 ─────────────────────────── */
+.wheel {
+  position: relative;
+  flex: 1;
+  height: 120px; /* 40px × 3칸 */
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.wheel-band {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.wheel-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  padding: 40px 0; /* 첫/마지막 칸도 가운데까지 올 수 있게 */
+  outline: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent);
+  mask-image: linear-gradient(transparent, #000 40%, #000 60%, transparent);
+}
+
+.wheel-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  height: 40px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.wheel-item.is-active {
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 800;
+}

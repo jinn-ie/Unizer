@@ -1,0 +1,130 @@
+/* ── 연습 추가 / 수정 박스 ─────────────── */
+.quick-add.is-edit {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.qa-submit.is-cancel {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.quick-add {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+}
+
+.quick-add:focus-within {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.qa-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 2줄: 시간 | 장소 (반반) */
+.qa-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.qa-time,
+.qa-space select {
+  width: 100%;
+  height: 46px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--white);
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.qa-time {
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+
+.qa-time.is-open {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.qa-space {
+  position: relative;
+}
+
+.qa-space::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 7px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 2px;
+  background: var(--c);
+  pointer-events: none;
+}
+
+.qa-space::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.qa-space select {
+  appearance: none;
+  border: 0;
+  padding: 0 32px 0 28px;
+  outline: none;
+  cursor: pointer;
+}
+
+.qa-space option {
+  background: var(--surface-2);
+  color: var(--white);
+}
+
+/* + (등록) 버튼 */
+.qa-submit {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--black);
+  transition:
+    transform 0.12s,
+    background 0.15s;
+}
+
+.qa-submit:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.qa-submit:disabled {
+  background: var(--surface-2);
+  color: var(--faint);
+  cursor: default;
+}

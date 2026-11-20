@@ -1,0 +1,153 @@
+/* ── 시간표(정규연습) 등록 칸 ───────────── */
+.tt-form {
+  margin: 0 0 12px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.tt-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tt-line {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.tt-select {
+  position: relative;
+}
+
+.tt-select::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -5px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.tt-select select,
+.tt-time {
+  width: 100%;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: var(--surface);
+  color: var(--white);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tt-select select {
+  appearance: none;
+  padding: 0 22px 0 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tt-select option {
+  background: var(--surface-2);
+  color: var(--white);
+}
+
+.tt-space select {
+  padding-left: 24px;
+}
+
+.tt-space::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 6px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 2px;
+  background: var(--c);
+  pointer-events: none;
+}
+
+.tt-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-time.is-open {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.tt-remove {
+  width: 28px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+
+.tt-row .qa-wheels {
+  margin: 6px 0 4px;
+}
+
+.tt-row .wheel {
+  background: var(--surface);
+}
+
+.tt-add {
+  width: 100%;
+  height: 38px;
+  margin-top: 6px;
+  border-radius: 9px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tt-period {
+  margin: 10px 2px 8px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.tt-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6px;
+}
+
+.tt-cancel,
+.tt-submit {
+  height: 42px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tt-cancel {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.tt-submit {
+  background: var(--white);
+  color: var(--black);
+}
+
+.tt-submit:disabled {
+  opacity: 0.6;
+}

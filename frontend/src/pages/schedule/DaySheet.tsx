@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { Note, ScheduleItem } from '../types'
-import { spaceInfo, SPACE_INDEX } from '../lib/spaces'
+import type { Note, ScheduleItem } from '../../types'
+import { spaceInfo, SPACE_INDEX } from '../../lib/spaces'
 import {
   addDays,
   formatCreated,
   formatDayTitle,
   formatStamp,
   formatTime,
-} from '../lib/date'
-import { deleteReservation } from '../api'
+} from '../../lib/date'
+import { deleteReservation } from '../../api'
 import { PracticeBox } from './PracticeBox'
 import { NoteForm, NoteList } from './NoteList'
+import './DaySheet.css'
 
 interface Props {
   day: Date

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { createRegularPractices } from '../api'
-import { SPACES, spaceInfo } from '../lib/spaces'
-import { formatMinutes, parseDateKey } from '../lib/date'
-import { TimeRangeWheels } from './TimeRangeWheels'
-import { Toast } from './Toast'
+import { createRegularPractices } from '../../api'
+import { SPACES, spaceInfo } from '../../lib/spaces'
+import { formatMinutes, parseDateKey } from '../../lib/date'
+import { TimeRangeWheels } from '../../components/TimeRangeWheels'
+import { Toast } from '../../components/Toast'
+import './TimetableForm.css'
 
 export interface Period {
   startsOn: string // "2026-11-02"

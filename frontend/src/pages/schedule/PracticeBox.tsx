@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import { createReservation, fetchSongs, updateReservation } from '../api'
-import type { Reservation, Song } from '../types'
-import { SPACES, spaceInfo } from '../lib/spaces'
-import { addDays, formatMinutes, parseLocal, startOfDay, toDateKey } from '../lib/date'
+import { createReservation, fetchSongs, updateReservation } from '../../api'
+import type { Reservation, Song } from '../../types'
+import { SPACES, spaceInfo } from '../../lib/spaces'
+import { addDays, formatMinutes, parseLocal, startOfDay, toDateKey } from '../../lib/date'
 import { SongInput } from './SongInput'
 import type { PracticeChoice } from './SongInput'
-import { TimeRangeWheels } from './TimeRangeWheels'
-import { Toast } from './Toast'
+import { TimeRangeWheels } from '../../components/TimeRangeWheels'
+import { Toast } from '../../components/Toast'
+import './PracticeBox.css'
 
 interface Props {
   day: Date

@@ -1,0 +1,193 @@
+/* ── 주간 캘린더 ───────────────────────── */
+.cal {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cal-head,
+.cal-body {
+  display: grid;
+  grid-template-columns: var(--time-col) repeat(7, minmax(0, 1fr));
+}
+
+.cal-head {
+  flex-shrink: 0;
+  z-index: 3;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.cal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.cal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cal-day-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 0 7px;
+  border-left: 4px solid transparent; /* 아래 날짜 칸의 두 줄 경계만큼 비워서 위치 맞추기 */
+}
+
+.cal-dow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+}
+
+.cal-date {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cal-day-head.is-today .cal-dow {
+  color: var(--white);
+}
+
+.cal-day-head.is-today .cal-date {
+  background: var(--white);
+  color: var(--black);
+}
+
+.cal-lane-key {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5px;
+  width: calc(100% - 6px);
+  margin-top: 2px;
+}
+
+.cal-lane-key i {
+  height: 2px;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+.cal-body {
+  position: relative;
+}
+
+.cal-times {
+  position: relative;
+}
+
+.cal-time {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.cal-time:first-child {
+  transform: translateY(2px);
+}
+
+.cal-day {
+  --gut: 0px; /* 날짜 칸 안쪽 여백 (지금은 없음: 4칸을 똑같이 나눔) */
+  /* 공간 한 줄의 너비 = 날짜 칸을 4등분 */
+  --lane-w: calc((100% - var(--gut) * 2) / 4);
+  position: relative;
+  /* 날짜와 날짜 사이 경계: 두 줄 (1px 선 + 2px 틈 + 1px 선) */
+  border-left: 4px double rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+}
+
+.cal-lines {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--time-col);
+  right: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cal-lines i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.cal-lines i.is-hour {
+  background: var(--line-strong);
+}
+
+.cal-day.is-today {
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+.cal-lane-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--gut) + var(--lane-w) * var(--lane));
+  width: 1px;
+  background: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.cal-block {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--gut) + var(--lane-w) * var(--lane) + 1px);
+  width: calc(var(--lane-w) - 2px);
+  border-radius: 4px;
+  background: var(--c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition:
+    transform 0.12s,
+    filter 0.12s;
+}
+
+.cal-block:active {
+  transform: scale(1.12);
+  filter: brightness(1.15);
+}
+
+.cal-now {
+  position: absolute;
+  left: -1px;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--white);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cal-now::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--white);
+}

@@ -1,0 +1,22 @@
+/* 시간을 누르면 펼쳐지는 휠 */
+.qa-wheels {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.time-sep {
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--faint);
+}
+
+.time-colon {
+  margin: 0 -4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--muted);
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import './WheelPicker.css'
 
 export interface WheelOption {
   value: number

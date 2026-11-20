@@ -1,0 +1,186 @@
+/* ── 안내(콜아웃): 노란 테두리 + 흰 글씨 ── */
+.notice {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 197, 66, 0.6);
+  color: var(--white);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.notice ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notice li {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.notice li::before {
+  content: '·';
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.notice li span {
+  flex: 1;
+  min-width: 0;
+  word-break: keep-all; /* 한글을 글자 단위가 아니라 단어 단위로 줄바꿈 */
+}
+
+.notice-link {
+  color: var(--faint); /* 글씨·밑줄 모두 회색 */
+  font-size: 9px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 좁은 폰(360px 등)에서도 안내 한 줄이 두 줄로 넘어가지 않게 */
+@media (max-width: 380px) {
+  .notice {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+  .notice-link {
+    font-size: 8px;
+  }
+}
+
+/* ── 주 이동 ──────────────────────────── */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--white);
+  transition: background 0.15s;
+}
+
+.icon-btn:active {
+  background: var(--surface-2);
+}
+
+.week-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.week-year {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+}
+
+.week-label strong {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.today-btn {
+  margin-left: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--white);
+  color: var(--black);
+  transition: opacity 0.15s;
+}
+
+.today-btn:disabled {
+  background: var(--surface-2);
+  color: var(--faint);
+  cursor: default;
+}
+
+/* ── 범례 ─────────────────────────────── */
+.legend {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 14px 0 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.legend i {
+  width: 8px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+/* ── 캘린더 ───────────────────────────── */
+.app > .cal-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.cal-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  z-index: 4;
+}
+
+.week-summary {
+  margin: 12px 2px 0;
+  font-size: 12.5px;
+  color: var(--faint);
+  text-align: center;
+}
+
+.week-summary b {
+  color: var(--white);
+}
+
+/* 아주 좁은 화면(320px 등) 대응 */
+@media (max-width: 360px) {
+  .legend {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+}

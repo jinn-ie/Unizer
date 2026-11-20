@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
-import type { Song } from '../types'
+import type { Song } from '../../types'
+import './SongInput.css'
 
 // 고른 결과: 곡이거나, 목록에 없는 이름을 그대로 쓴 공통 일정(돌리기, 기본기 …)
 export type PracticeChoice = { kind: 'song'; song: Song } | { kind: 'title'; title: string }
