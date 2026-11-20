@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATABASE_URL = "sqlite:///./dance_ud.db"        # 실행한 위치에 dance_ud.db 파일이 생김
+DATABASE_URL = "sqlite:///./unizer.db"        # 실행한 위치에 unizer.db 파일이 생김
 
 engine = create_engine(DATABASE_URL, echo=True) # echo=True: 실행되는 SQL을 터미널에 출력
 SessionLocal = sessionmaker(bind=engine)        # DB와 대화하는 "세션"을 찍어내는 공장
