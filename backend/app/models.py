@@ -132,3 +132,19 @@ class Feedback(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(default=now_kst)
+
+
+# ── 로그인 ──
+class MemberPassword(Base):
+    __tablename__ = "member_passwords"
+
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), primary_key=True)
+    password_hash: Mapped[str] = mapped_column(String(96))
+
+
+class LoginSession(Base):
+    __tablename__ = "login_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
+    expires_at: Mapped[datetime] = mapped_column(index=True)
