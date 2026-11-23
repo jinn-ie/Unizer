@@ -87,8 +87,8 @@ frontend/
 
 | 기능 | 화면(탭) | 프론트 | 백엔드 | 테이블 | 담당 |
 |---|---|---|---|---|---|
-| **연습 공간** — 주간 캘린더, 보충 등록·수정·삭제, 날짜별 메모 | 연습 공간 | `pages/schedule/` | `routers/reservations.py`<br>`routers/notes.py`<br>`services/conflicts.py` | `reservations`<br>`notes` | jinn-ie |
-| **곡** — 곡 목록, 붙여넣기로 곡 등록, 정규연습 시간표 등록 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableForm`) | `routers/songs.py`<br>`routers/regular_practices.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`regular_practices` | jinn-ie |
+| **연습 공간** — 주간 캘린더, 연습 등록·수정·삭제, 날짜별 메모 | 연습 공간 | `pages/schedule/` | `routers/reservations.py`<br>`routers/notes.py`<br>`services/conflicts.py` | `reservations`<br>`notes` | jinn-ie |
+| **곡** — 곡 목록, 붙여넣기로 곡 등록, 시간표 등록·수정·삭제 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableBuilder`) | `routers/songs.py`<br>`routers/timetables.py`<br>`services/timetables.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`timetables`<br>`timetable_slots` | jinn-ie |
 | **부원** — 기수별 부원 목록 | 부원 | `pages/data/DataPage.tsx` | `routers/members.py`<br>`seed.py`, `data/members.csv` | `members` | jinn-ie |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
 

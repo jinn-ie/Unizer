@@ -25,27 +25,41 @@ erDiagram
         time end_time
     }
 
-    RegularPractice {
+    Timetable {
         int id PK
+        string name
+        date starts_on
+        date ends_on
+        datetime created_at
+        datetime updated_at
+    }
+
+    TimetableSlot {
+        int id PK
+        int timetable_id FK
         int song_id FK
         int weekday
         time start_time
         time end_time
         string space
-        date starts_on
-        date ends_on
     }
 
     Reservation {
         int id PK
         int song_id FK
+        string title
         datetime start_at
         datetime end_at
         string space
+        datetime created_at
+        datetime updated_at
+        int slot_id FK
     }
 
     Members ||--o{ Song_Members : participates
     Song ||--o{ Song_Members : has_members
     Members ||--o{ MemberAvailability : has_schedule
-    Song ||--o{ RegularPractice : has_practice
     Song ||--o{ Reservation : has_reservation
+    Timetable ||--o{ TimetableSlot : has_slot
+    Song ||--o{ TimetableSlot : in_slot
+    TimetableSlot |o--o{ Reservation : generates

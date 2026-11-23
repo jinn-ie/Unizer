@@ -9,8 +9,8 @@ from app.models import Reservation
 from app.schemas import ReservationIn, ReservationRead
 from app.services.conflicts import check_reservation
 
-# 보충 (날짜 하나에만 잡는 연습)
-router = APIRouter(prefix="/api/reservations", tags=["보충"])
+# 연습 (날짜 하나에 잡는 연습 1건. 시간표로 만든 연습도 여기서 하나씩 수정/삭제)
+router = APIRouter(prefix="/api/reservations", tags=["연습"])
 
 
 @router.get("", response_model=list[ReservationRead])                    # → GET /api/reservations
@@ -33,7 +33,7 @@ def create_reservation(data: ReservationIn, db: Annotated[Session, Depends(get_d
 def update_reservation(reservation_id: int, data: ReservationIn, db: Annotated[Session, Depends(get_db)]):
     reservation = db.get(Reservation, reservation_id)
     if reservation is None:
-        raise HTTPException(404, "해당하는 보충이 없어요.")
+        raise HTTPException(404, "해당하는 연습이 없어요.")
     check_reservation(db, data, exclude_id=reservation_id)
     for key, value in data.model_dump().items():
         setattr(reservation, key, value)
@@ -46,6 +46,7 @@ def update_reservation(reservation_id: int, data: ReservationIn, db: Annotated[S
 def delete_reservation(reservation_id: int, db: Annotated[Session, Depends(get_db)]):
     reservation = db.get(Reservation, reservation_id)
     if reservation is None:
-        raise HTTPException(404, "해당하는 보충이 없어요.")
+        raise HTTPException(404, "해당하는 연습이 없어요.")
     db.delete(reservation)
     db.commit()
+

@@ -14,11 +14,12 @@ def now_kst() -> datetime:
     """지금 한국 시각 (다른 시간들처럼 타임존 정보 없이 저장)"""
     return datetime.now(KST).replace(tzinfo=None)
 
+# 순서 = 공간 우선순위
 class Space(enum.StrEnum):
     DONGBANG = "동방"
+    OUTSIDE_MIRROR = "바깥거울"
     CONF_ROOM_1 = "대회의실1"
     CONF_ROOM_2 = "대회의실2"
-    OUTSIDE_MIRROR = "바깥거울"
 
 class Member(Base):
     __tablename__ = "members"
@@ -45,32 +46,52 @@ class SongMember(Base):
     song: Mapped["Song"] = relationship()
     member: Mapped["Member"] = relationship()
 
-# 매주 반복되는 정규연습 (곡 연습 + 기본기 같은 공통 일정)
-class RegularPractice(Base):
-    __tablename__ = "regular_practices"
+
+# 시간표 (예: "2026 버스킹 2차곡" 11/02 ~ 11/29)
+class Timetable(Base):
+    __tablename__ = "timetables"
+    __table_args__ = (CheckConstraint("starts_on <= ends_on", name="ck_tt_period"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    starts_on: Mapped[date]                          # 이 날부터 (포함)
+    ends_on: Mapped[date]                            # 이 날까지 (포함)
+    created_at: Mapped[datetime] = mapped_column(default=now_kst)
+    updated_at: Mapped[datetime | None] = mapped_column(onupdate=now_kst)
+
+    # 시간표를 지우면 블록도 같이 지워짐
+    slots: Mapped[list["TimetableSlot"]] = relationship(
+        back_populates="timetable", cascade="all, delete-orphan", order_by="TimetableSlot.id"
+    )
+
+# 시간표 안의 블록 1개 (예: 화 13:00~15:00 BAD 동방) → 기간 안의 화요일마다 연습 1건씩
+# 곡 연습이면 song_id, 곡이 아닌 일정(돌리기 · 기본기)이면 title
+class TimetableSlot(Base):
+    __tablename__ = "timetable_slots"
     __table_args__ = (
-        CheckConstraint("starts_on <= ends_on", name="ck_rp_period"),
-        CheckConstraint("weekday BETWEEN 0 AND 6", name="ck_rp_weekday"),
-        CheckConstraint("(song_id IS NULL) <> (title IS NULL)", name="ck_rp_song_or_title"),
+        CheckConstraint("weekday BETWEEN 0 AND 6", name="ck_ts_weekday"),
+        CheckConstraint("start_time <> end_time", name="ck_ts_time"),
+        CheckConstraint("(song_id IS NULL) <> (title IS NULL)", name="ck_ts_song_or_title"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    timetable_id: Mapped[int] = mapped_column(ForeignKey("timetables.id", ondelete="CASCADE"))
     song_id: Mapped[int | None] = mapped_column(ForeignKey("songs.id"))
     title: Mapped[str | None] = mapped_column(String(100))  # "기본기"
     weekday: Mapped[int]                             # 0=일, 1=월, ... 6=토
-    start_time: Mapped[time]                         # 시각만 (예: 19:00)
-    end_time: Mapped[time]
+    start_time: Mapped[time]
+    end_time: Mapped[time]                           # 시작보다 이르면 다음 날 (00:00 = 자정)
     space: Mapped[Space] = mapped_column(SAEnum(Space, native_enum=False, length=30))
-    starts_on: Mapped[date]                          # 이 날부터 (포함)
-    ends_on: Mapped[date]                            # 이 날까지 (포함)
 
+    timetable: Mapped["Timetable"] = relationship(back_populates="slots")
     song: Mapped["Song | None"] = relationship(lazy="joined")
 
     @property
-    def song_title(self) -> str | None:
-        return self.song.title if self.song else None
+    def name(self) -> str:
+        """화면 · 오류 문구에 쓰는 이름: 곡명 또는 일정 이름"""
+        return self.song.title if self.song else (self.title or "")
 
-# 보충
+# 연습
 class Reservation(Base):
     __tablename__ = "reservations"
     __table_args__ = (
@@ -86,7 +107,9 @@ class Reservation(Base):
     end_at: Mapped[datetime]
     created_at: Mapped[datetime | None] = mapped_column(default=now_kst)
     updated_at: Mapped[datetime | None] = mapped_column(onupdate=now_kst)  # 마지막 수정 시각 (수정 전엔 None)
-
+    # 시간표 블록으로 만든 연습이면 그 블록 번호, 직접 잡은 연습이면 None
+    # (블록을 지울 땐 BE 에서 연습을 먼저 지움. SET NULL 은 혹시 남은 연습이 고아가 되지 않게 하는 안전장치)
+    slot_id: Mapped[int | None] = mapped_column(ForeignKey("timetable_slots.id", ondelete="SET NULL"))
     song: Mapped["Song | None"] = relationship(lazy="joined")
 
     @property

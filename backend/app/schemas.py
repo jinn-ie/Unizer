@@ -2,20 +2,6 @@ from datetime import date, datetime, time
 from pydantic import BaseModel, ConfigDict, Field
 from app.models import Space
 
-class RegularPracticeRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    song_id: int | None     # 곡 연습이면 번호, 공통 일정이면 null
-    song_title: str | None  # 곡 연습이면 곡명
-    title: str | None       # 공통 일정이면 이름
-    weekday: int
-    start_time: time
-    end_time: time
-    space: Space
-    starts_on: date
-    ends_on: date
-
 class ReservationIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -36,7 +22,8 @@ class ReservationRead(BaseModel):
     start_at: datetime
     end_at: datetime
     created_at: datetime | None
-    updated_at: datetime | None    # 마지막 수정 시각 (수정한 적 없으면 null)
+    updated_at: datetime | None     # 마지막 수정 시각 (수정한 적 없으면 null)
+    slot_id: int | None             # 시간표로 만든 연습이면 블록 번호
 
 class MemberRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -98,20 +85,6 @@ class ImportSong(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     members: list[ImportMember] = Field(min_length=1)
 
-class RegularPracticeIn(BaseModel):
-    """정규연습 등록 때 받는 모양 (곡 연습이면 song_id, 공통 일정이면 title)"""
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    song_id: int | None = None
-    title: str | None = Field(default=None, min_length=1, max_length=100)
-    weekday: int = Field(ge=0, le=6)
-    start_time: time
-    end_time: time
-    space: Space
-    starts_on: date
-    ends_on: date
-
-
 class NoteIn(BaseModel):
     """메모 남길 때 받는 모양"""
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -139,3 +112,46 @@ class FeedbackRead(BaseModel):
     id: int
     text: str
     created_at: datetime
+
+class SlotIn(BaseModel):
+    """시간표 블록 1개 (수정할 때 기존 블록이면 id, 새 블록이면 id 없음)
+    곡 연습이면 song_id, 곡이 아닌 일정(돌리기 · 기본기)이면 title"""
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    id: int | None = None
+    song_id: int | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    weekday: int = Field(ge=0, le=6)   # 0=일, 1=월, ... 6=토
+    start_time: time
+    end_time: time                     # 시작보다 이르면 다음 날 (00:00 = 자정)
+    space: Space
+
+class TimetableIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=100)
+    starts_on: date
+    ends_on: date
+    slots: list[SlotIn] = Field(min_length=1)
+
+class SlotRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    song_id: int | None     # 곡 연습이면 번호
+    title: str | None       # 곡이 아닌 일정이면 이름 ("기본기")
+    weekday: int
+    start_time: time
+    end_time: time
+    space: Space
+
+class TimetableRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    starts_on: date
+    ends_on: date
+    created_at: datetime
+    updated_at: datetime | None
+    slots: list[SlotRead]
