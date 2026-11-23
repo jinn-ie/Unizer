@@ -150,7 +150,7 @@ frontend/
 
 - **새 테이블 추가:** 그냥 `models.py`에 추가하면 돼요. migrate 가 없는 테이블을 만들어 줘요. (로컬에서는 `python -m app.seed` 또는 `python -m app.migrate`)
 - **기존 테이블 수정** (컬럼 추가 · 삭제 · 이름 변경): `create_all`로는 안 돼서, **`migrate.py`의 `STEPS`에 단계를 하나 추가**해요. 다른 기능의 데이터에 영향이 갈 수 있으니 **작업 전에 먼저 이야기해 주세요.**
-  - 단계 함수는 "이미 반영됐으면 건너뛰기"로 써야 해요. (파일 안의 `add_reservation_slot_id` 참고)
+  - 단계 함수는 "이미 반영됐으면 건너뛰기"로 써야 해요. (파일 안의 예시 `add_reservation_memo` 참고)
   - 로컬 DB에도 `python -m app.migrate`를 한 번 실행해서 반영해요. (먼저 `unizer.db`를 복사해 백업)
   - 서버 DB와 모든 로컬 DB에 반영된 게 확인된 단계는 지워도 돼요.
 

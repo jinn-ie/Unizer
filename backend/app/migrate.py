@@ -22,29 +22,22 @@ def has_column(conn, table: str, column: str) -> bool:
 # ── 변경 단계 (위에서부터 차례로 실행) ──────────
 # 함수는 실제로 바꿨으면 True, 이미 반영돼 있어서 건너뛰었으면 False 를 돌려줌
 # 서버 DB 와 모든 로컬 DB 에 반영된 게 확인되면 지워도 됨 (새로 만드는 DB 는 create_all 이 이미 최신 구조로 만듦)
-
-def drop_regular_practices(conn) -> bool:
-    """2026-11-23 정규연습 테이블 삭제 (시간표로 대체)"""
-    if not has_table(conn, "regular_practices"):
-        return False
-    conn.execute(text("DROP TABLE regular_practices"))
-    return True
-
-
-def add_reservation_slot_id(conn) -> bool:
-    """2026-11-23 reservations.slot_id 추가 (연습 ↔ 시간표 블록 연결)"""
-    if has_column(conn, "reservations", "slot_id"):
-        return False
-    conn.execute(text(
-        "ALTER TABLE reservations ADD COLUMN slot_id INTEGER "
-        "REFERENCES timetable_slots(id) ON DELETE SET NULL"
-    ))
-    return True
-
+#
+# 예시: 기존 테이블에 컬럼 추가
+#
+# def add_reservation_memo(conn) -> bool:
+#     """2026-12-01 reservations.memo 추가 (연습마다 한 줄 메모)"""
+#     if has_column(conn, "reservations", "memo"):
+#         return False                       # 이미 있음 → 건너뜀
+#     conn.execute(text("ALTER TABLE reservations ADD COLUMN memo VARCHAR(200)"))
+#     return True
+#
+# 테이블 삭제는 has_table 로 확인:  if not has_table(conn, "옛_테이블"): return False
+#
+# 반영 끝나서 지운 단계: 2026-11-23 regular_practices 삭제, reservations.slot_id 추가
 
 STEPS = [
-    drop_regular_practices,
-    add_reservation_slot_id,
+    # add_reservation_memo,
 ]
 
 
