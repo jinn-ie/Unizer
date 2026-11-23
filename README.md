@@ -54,6 +54,7 @@ npm run dev
 - 백엔드 포트는 **8000 그대로** 두세요. 프론트가 `/api` 요청을 8000번으로 넘겨요. (`frontend/vite.config.ts`)
 - http://127.0.0.1:8000/docs 에서 API 목록을 보고 직접 호출해 볼 수 있어요.
 - 로컬 `unizer.db`는 테스트용이에요. 진짜 데이터는 서버에 있어요.
+- `git pull`로 다른 사람이 바꾼 코드를 받은 뒤에는 `python -m app.migrate`를 한 번 실행해요. DB 구조가 바뀌었으면 로컬 DB에도 반영돼요. (이미 최신이면 아무것도 안 해요)
 
 ---
 
@@ -69,6 +70,7 @@ backend/
     routers/             기능별 API  ← 기능 하나 = 파일 하나
     services/            여러 API가 같이 쓰는 로직 (시간 겹침 검사, 시간표 → 연습 만들기)
     seed.py              테이블 만들기 + 부원 넣기
+    migrate.py           배포 때 DB 구조 변경을 자동 반영
     song_import.py       곡 붙여넣기 파싱
   data/members.csv       부원 명단
 
@@ -119,7 +121,7 @@ frontend/
    router = APIRouter(prefix="/api/events", tags=["행사"])
    ```
 4. `main.py` — `app.include_router(events.router)` 한 줄 추가
-5. `python -m app.seed` — 새 테이블을 로컬 DB에 만들어요. (없는 테이블만 만들고 기존 데이터는 그대로예요)
+5. `python -m app.migrate` — 새 테이블을 로컬 DB에 만들어요. (없는 테이블만 만들고 기존 데이터는 그대로예요. 서버는 배포할 때 자동)
 6. http://127.0.0.1:8000/docs 에서 직접 호출해 보기
 
 **프론트엔드**
@@ -142,22 +144,15 @@ frontend/
 | `index.css`, `components/`, `lib/` | 모든 화면에 영향이 가니까 **고치기 전에 먼저 말하기** |
 | `lib/spaces.ts` ↔ `models.py`의 `Space` | 공간 목록과 **순서**(동방 → 바깥거울 → 대회의실1 → 대회의실2)는 두 곳이 같아야 해요. 순서는 캘린더 세로줄 순서이기도 해요. 바꿀 땐 둘 다 |
 
-### ⚠️ 기존 테이블 구조를 바꿀 땐 먼저 상의하기
+### ⚠️ 테이블 구조를 바꿀 땐
 
-테이블은 `python -m app.seed`(`create_all`)로 만들어요. 이 방식은 **없는 테이블만 새로 만들고, 이미 있는 테이블에 컬럼을 추가하거나 바꾸지는 못해요.**
-그래서 기존 테이블에 컬럼을 추가하면 내 로컬에서는 DB를 지우고 다시 만들어 동작하더라도, 실제 데이터가 있는 서버 DB에는 반영되지 않아요.
+배포할 때마다 `python -m app.migrate`(`backend/app/migrate.py`)가 자동으로 돌아요.
 
-- **새 테이블 추가:** 괜찮아요. 배포한 뒤 서버에서 `python -m app.seed`를 한 번 실행하면 돼요.
-- **기존 테이블 수정** (컬럼 추가·삭제·이름 변경): 작업 전에 먼저 이야기해 주세요.
-  서버에서는 SQL을 직접 실행해야 하고, 실행한 SQL은 아래 [서버 DB 변경 기록](#서버-db-변경-기록)에 남겨 주세요.
-
-예: `reservations`에 컬럼 추가 (`backend` 폴더에서, 먼저 `unizer.db`를 복사해 백업)
-
-```bat
-python -c "import sqlite3; c = sqlite3.connect('unizer.db'); c.execute('ALTER TABLE reservations ADD COLUMN 컬럼 INTEGER'); c.commit()"
-```
-
-서버에서는 `python` 대신 `venv/bin/python`이에요.
+- **새 테이블 추가:** 그냥 `models.py`에 추가하면 돼요. migrate 가 없는 테이블을 만들어 줘요. (로컬에서는 `python -m app.seed` 또는 `python -m app.migrate`)
+- **기존 테이블 수정** (컬럼 추가 · 삭제 · 이름 변경): `create_all`로는 안 돼서, **`migrate.py`의 `STEPS`에 단계를 하나 추가**해요. 다른 기능의 데이터에 영향이 갈 수 있으니 **작업 전에 먼저 이야기해 주세요.**
+  - 단계 함수는 "이미 반영됐으면 건너뛰기"로 써야 해요. (파일 안의 `add_reservation_slot_id` 참고)
+  - 로컬 DB에도 `python -m app.migrate`를 한 번 실행해서 반영해요. (먼저 `unizer.db`를 복사해 백업)
+  - 서버 DB와 모든 로컬 DB에 반영된 게 확인된 단계는 지워도 돼요.
 
 ---
 
@@ -223,38 +218,21 @@ fix(frontend): 보충 수정 시 시간이 초기화되는 문제 수정
 
 ## 배포
 
-서버(Oracle Cloud) 한 대에 nginx + uvicorn + SQLite로 올라가 있어요. 서버 접속 권한은 jinn-ie에게 있어요.
+서버(Oracle Cloud) 한 대에 nginx + uvicorn + SQLite로 올라가 있어요.
 
-1. 작업이 `main`에 합쳐지면
-2. jinn-ie가 서버에 접속해서 배포 스크립트를 실행해요.
-   ```bash
-   ~/deploy.sh
-   ```
-   스크립트가 순서대로 해 주는 일: DB 백업 → `git pull` → `pip install` + 백엔드 재시작 → 프론트 빌드 → nginx 폴더(`/var/www/unizer`)로 복사
-3. **새 테이블이 생겼다면** 이어서 한 번 더 실행해요.
-   ```bash
-   cd ~/Unizer/backend
-   venv/bin/python -m app.seed
-   ```
-   서버 venv 폴더 이름은 점 없이 `venv`예요. 로컬은 `.venv`라서 달라요.
+### 자동 배포 (GitHub Actions)
 
-4. **아래 [서버 DB 변경 기록](#서버-db-변경-기록)에 아직 서버에 안 한 항목이 있으면** 이어서 실행해요. `deploy.sh` **바로 다음에** 해야 해요. (새 코드가 없는 컬럼을 읽으면 API가 에러가 나요)
+**`main`에 푸시하면 자동으로 배포돼요.** 서버에 접속할 필요 없어요. (`.github/workflows/deploy.yml`)
+
+1. **검사:** 백엔드 import · 프론트 빌드 · lint. 하나라도 실패하면 배포하지 않아요.
+2. **배포:** GitHub가 SSH로 서버에 접속해서 `~/deploy.sh`를 실행해요.
+   DB 백업 → `git pull` → `pip install` → **DB 정리(`python -m app.migrate`)** → 백엔드 재시작 → 프론트 빌드 → nginx 폴더(`/var/www/unizer`)로 복사
+
+- 진행 상황과 로그는 GitHub 저장소의 **Actions** 탭에서 봐요. 실패하면 빨간 X가 떠요.
+- 문서(`*.md`, `ERD.txt`)만 바뀐 푸시는 배포하지 않아요.
+- 손으로 다시 돌리려면 Actions 탭 → "배포" → **Run workflow**.
+- 서버 접속 정보(주소 · 사용자 · 배포용 SSH 키)는 저장소 Settings → Secrets 의 `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`에 있어요.
+
+자동 배포가 안 될 때는 서버에 접속해서 `~/deploy.sh`를 직접 실행해도 돼요. (서버 venv 폴더 이름은 점 없이 `venv`예요)
 
 로컬 DB 파일을 서버로 올리면 진짜 데이터가 덮어써지니까 절대 올리지 마세요.
-
-### 서버 DB 변경 기록
-
-`create_all`로는 안 되는 변경(기존 테이블 수정 · 삭제)이에요. 서버의 `~/Unizer/backend`에서, **먼저 DB를 백업하고** 위에서부터 차례로 실행해요. 서버에 반영했으면 `서버 반영` 칸을 채워 주세요.
-
-| 커밋 | 내용 | 실행할 것 | 서버 반영 |
-|---|---|---|---|
-| `5d63984` | 정규연습 삭제 | `DROP TABLE regular_practices` | |
-| `5d63984` | 시간표 추가 | `venv/bin/python -m app.seed` (새 테이블 `timetables`, `timetable_slots`) | |
-| `5d63984` | 연습 ↔ 시간표 블록 연결 | `ALTER TABLE reservations ADD COLUMN slot_id INTEGER REFERENCES timetable_slots(id) ON DELETE SET NULL` | |
-
-SQL 한 줄 실행하기:
-
-```bash
-cp unizer.db unizer.db.before-migrate.bak
-venv/bin/python -c "import sqlite3; c = sqlite3.connect('unizer.db'); c.execute('여기에 SQL'); c.commit()"
-```
