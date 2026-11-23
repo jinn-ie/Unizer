@@ -133,3 +133,10 @@ export interface NoteInput {
 export interface FeedbackInput {
   text: string
 }
+
+// ── 로그인 ──
+export interface LoginInput {
+  gen: number
+  name: string
+  password?: string
+}
