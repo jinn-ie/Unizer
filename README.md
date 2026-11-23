@@ -149,6 +149,15 @@ frontend/
 
 - **새 테이블 추가:** 괜찮아요. 배포한 뒤 서버에서 `python -m app.seed`를 한 번 실행하면 돼요.
 - **기존 테이블 수정** (컬럼 추가·삭제·이름 변경): 작업 전에 먼저 이야기해 주세요.
+  서버에서는 SQL을 직접 실행해야 하고, 실행한 SQL은 아래 [서버 DB 변경 기록](#서버-db-변경-기록)에 남겨 주세요.
+
+예: `reservations`에 컬럼 추가 (`backend` 폴더에서, 먼저 `unizer.db`를 복사해 백업)
+
+```bat
+python -c "import sqlite3; c = sqlite3.connect('unizer.db'); c.execute('ALTER TABLE reservations ADD COLUMN 컬럼 INTEGER'); c.commit()"
+```
+
+서버에서는 `python` 대신 `venv/bin/python`이에요.
 
 ---
 
@@ -219,4 +228,23 @@ fix(frontend): 보충 수정 시 시간이 초기화되는 문제 수정
    ```
    서버 venv 폴더 이름은 점 없이 `venv`예요. 로컬은 `.venv`라서 달라요.
 
+4. **아래 [서버 DB 변경 기록](#서버-db-변경-기록)에 아직 서버에 안 한 항목이 있으면** 이어서 실행해요. `deploy.sh` **바로 다음에** 해야 해요. (새 코드가 없는 컬럼을 읽으면 API가 에러가 나요)
+
 로컬 DB 파일을 서버로 올리면 진짜 데이터가 덮어써지니까 절대 올리지 마세요.
+
+### 서버 DB 변경 기록
+
+`create_all`로는 안 되는 변경(기존 테이블 수정 · 삭제)이에요. 서버의 `~/Unizer/backend`에서, **먼저 DB를 백업하고** 위에서부터 차례로 실행해요. 서버에 반영했으면 `서버 반영` 칸을 채워 주세요.
+
+| 커밋 | 내용 | 실행할 것 | 서버 반영 |
+|---|---|---|---|
+| `5d63984` | 정규연습 삭제 | `DROP TABLE regular_practices` | |
+| `5d63984` | 시간표 추가 | `venv/bin/python -m app.seed` (새 테이블 `timetables`, `timetable_slots`) | |
+| `5d63984` | 연습 ↔ 시간표 블록 연결 | `ALTER TABLE reservations ADD COLUMN slot_id INTEGER REFERENCES timetable_slots(id) ON DELETE SET NULL` | |
+
+SQL 한 줄 실행하기:
+
+```bash
+cp unizer.db unizer.db.before-migrate.bak
+venv/bin/python -c "import sqlite3; c = sqlite3.connect('unizer.db'); c.execute('여기에 SQL'); c.commit()"
+```
