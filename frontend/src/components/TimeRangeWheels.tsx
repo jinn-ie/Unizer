@@ -5,7 +5,7 @@ interface Props {
   start: number // 그 날 0시부터 몇 분 (예: 18:00 → 1080)
   end: number
   onChange: (start: number, end: number) => void
-  maxEnd?: number // 종료 최댓값 (기본 24:00, 정규연습처럼 시각만 저장하면 23:30)
+  maxEnd?: number // 종료 최댓값 (기본 24:00)
 }
 
 const STEP = 30 // 30분 단위

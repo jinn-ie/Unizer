@@ -25,8 +25,8 @@ interface Props {
 
 export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Props) {
   const focusRef = useRef<HTMLLIElement>(null)
-  const [activeKey, setActiveKey] = useState<string | null>(null) // 수정/삭제 버튼이 열린 보충
-  const [editKey, setEditKey] = useState<string | null>(null) // 입력창으로 바뀐 보충
+  const [activeKey, setActiveKey] = useState<string | null>(null) // 수정/삭제 버튼이 열린 연습
+  const [editKey, setEditKey] = useState<string | null>(null) // 입력창으로 바뀐 연습
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -57,7 +57,7 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
     const dayEnd = addDays(day, 1).getTime()
     return items
       .filter((it) => it.start.getTime() < dayEnd && it.end.getTime() > dayStart)
-      // 공간 순서(동방 → 대회의실1 → 대회의실2 → 바깥거울), 같은 공간 안에서는 시간순
+      // 공간 순서(동방 → 바깥거울 → 대회의실1 → 대회의실2), 같은 공간 안에서는 시간순
       .sort(
         (a, b) =>
           (SPACE_INDEX.get(a.space) ?? 9) - (SPACE_INDEX.get(b.space) ?? 9) ||
@@ -104,12 +104,11 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
               // 앞 연습과 공간이 다르면 위에 구분선
               const newSpace = idx > 0 && dayItems[idx - 1].space !== it.space
               const focused = it.key === focusKey
-              const regular = it.kind === 'regular'
-              const r = it.reservation // 보충만 수정/삭제 가능 (정규연습은 X)
-              const active = !!r && it.key === activeKey
+              const r = it.reservation
+              const active = it.key === activeKey
 
               // 수정 중: 같은 자리에 기존 값이 채워진 입력 박스
-              if (r && it.key === editKey) {
+              if (it.key === editKey) {
                 return (
                   <li key={it.key} className={`sheet-edit${newSpace ? ' is-new-space' : ''}`}>
                     <PracticeBox
@@ -130,8 +129,8 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
                 <li
                   key={it.key}
                   ref={focused ? focusRef : undefined}
-                  className={`sheet-item${focused || active ? ' is-focused' : ''}${r ? ' is-tappable' : ''}${newSpace ? ' is-new-space' : ''}`}
-                  onClick={r ? () => toggleActive(it.key) : undefined}
+                  className={`sheet-item${focused || active ? ' is-focused' : ''}${newSpace ? ' is-new-space' : ''}`}
+                  onClick={() => toggleActive(it.key)}
                 >
                   <span className="sheet-bar" style={{ '--c': space.color } as CSSProperties} />
                   {/* 시간 | 곡명 (시간이 먼저, 더 크게) */}
@@ -143,7 +142,6 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
                       |
                     </span>
                     <strong className="sheet-song">
-                      {regular && <span className="sheet-tag">정규</span>}
                       {it.title}
                     </strong>
                   </div>

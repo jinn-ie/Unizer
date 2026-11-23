@@ -5,12 +5,12 @@ import type {
   Note,
   NoteInput,
   PreviewSong,
-  RegularPractice,
-  RegularPracticeInput,
   Reservation,
   ReservationInput,
   Song,
   SongMember,
+  Timetable,
+  TimetableInput,
 } from './types'
 
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -21,10 +21,6 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
 
 export function fetchReservations(signal?: AbortSignal) {
   return getJson<Reservation[]>('/api/reservations', signal)
-}
-
-export function fetchRegularPractices(signal?: AbortSignal) {
-  return getJson<RegularPractice[]>('/api/regular-practices', signal)
 }
 
 export function fetchMembers(signal?: AbortSignal) {
@@ -82,9 +78,24 @@ export function importSongs(songs: ImportSong[]) {
   return sendJson<Song[]>('/api/songs/import', 'POST', songs)
 }
 
-// 정규연습 여러 개(요일별)를 한꺼번에 등록
-export function createRegularPractices(items: RegularPracticeInput[]) {
-  return sendJson<RegularPractice[]>('/api/regular-practices', 'POST', items)
+// ── 시간표 (블록마다 기간 안의 그 요일에 연습이 만들어짐) ──
+export function fetchTimetables(signal?: AbortSignal) {
+  return getJson<Timetable[]>('/api/timetables', signal)
+}
+
+// 등록: 시간표 + 연습을 한 번에 (하나라도 겹치면 전부 취소)
+export function createTimetable(input: TimetableInput) {
+  return sendJson<Timetable>('/api/timetables', 'POST', input)
+}
+
+// 수정: 바뀐 블록의 연습을 기간 전체에서 다시 만듦 (안 바뀐 블록의 연습은 그대로)
+export function updateTimetable(id: number, input: TimetableInput) {
+  return sendJson<Timetable>(`/api/timetables/${id}`, 'PUT', input)
+}
+
+// 삭제: 그 시간표로 만든 연습도 전부 지움 (지난 날짜 포함)
+export function deleteTimetable(id: number) {
+  return sendJson<void>(`/api/timetables/${id}`, 'DELETE')
 }
 
 // ── 날짜별 메모 ──

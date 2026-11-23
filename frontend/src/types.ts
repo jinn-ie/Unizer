@@ -1,42 +1,26 @@
-// 백엔드 schemas.py 의 ReservationRead 와 같은 모양 (한 번만 있는 연습)
+// 백엔드 schemas.py 의 ReservationRead 와 같은 모양 (연습 1건)
 // 곡 연습이면 song_id/song_title, 공통 일정이면 title 이 채워짐
 export interface Reservation {
   id: number
   song_id: number | null
   song_title: string | null
   title: string | null
-  space: string // "동방" | "대회의실1" | "대회의실2" | "바깥거울"
+  space: string // "동방" | "바깥거울" | "대회의실1" | "대회의실2"
   start_at: string // "2026-11-18T19:00:00" (한국 시간, 타임존 없음)
   end_at: string
   created_at: string | null // 등록 시각 (예전 연습은 null)
   updated_at: string | null // 마지막 수정 시각 (수정한 적 없으면 null)
+  slot_id: number | null // 시간표로 만든 연습이면 그 블록 번호
 }
 
-// 백엔드 schemas.py 의 RegularPracticeRead 와 같은 모양 (매주 반복 규칙)
-export interface RegularPractice {
-  id: number
-  song_id: number | null
-  song_title: string | null
-  title: string | null
-  weekday: number // 0=일 … 6=토
-  start_time: string // "19:00:00"
-  end_time: string
-  space: string
-  starts_on: string // "2026-11-02" (포함)
-  ends_on: string // "2026-11-27" (포함)
-}
-
-// 화면에 그리는 일정 1건 (리더 연습 / 정규연습을 같은 모양으로)
-export type ScheduleKind = 'reservation' | 'regular'
-
+// 화면에 그리는 일정 1건
 export interface ScheduleItem {
   key: string // 화면에서 쓰는 고유 키
-  kind: ScheduleKind
   title: string
   space: string
   start: Date
   end: Date
-  reservation?: Reservation // 보충이면 원본 (수정/삭제할 때 사용)
+  reservation: Reservation // 원본 (수정/삭제할 때 사용)
 }
 
 // 백엔드 schemas.py 의 MemberRead / SongRead / SongMemberRead 와 같은 모양
@@ -91,16 +75,44 @@ export interface ImportSong {
   members: { member_id: number; leader: boolean }[]
 }
 
-// 정규연습 등록 때 보내는 값 (백엔드에 만들 RegularPracticeIn 과 같은 모양)
-export interface RegularPracticeInput {
+// 시간표 (백엔드 schemas.py 의 TimetableRead / SlotRead 와 같은 모양)
+// 블록 1개 = 기간 안의 그 요일마다 연습 1건
+export interface TimetableSlot {
+  id: number
+  song_id: number | null // 곡 연습이면 곡 번호
+  title: string | null // 곡이 아닌 일정이면 이름 ("기본기")
+  weekday: number // 0=일 … 6=토
+  start_time: string // "19:00:00"
+  end_time: string // 시작보다 이르면 다음 날 ("00:00:00" = 자정)
+  space: string
+}
+
+export interface Timetable {
+  id: number
+  name: string // "2026 버스킹 2차곡"
+  starts_on: string // "2026-11-24" (포함)
+  ends_on: string // "2026-12-14" (포함)
+  created_at: string
+  updated_at: string | null
+  slots: TimetableSlot[]
+}
+
+// 시간표 등록/수정 때 보내는 값 (TimetableIn / SlotIn). 수정할 때 기존 블록은 id 를 같이 보냄
+export interface TimetableSlotInput {
+  id: number | null
   song_id: number | null
   title: string | null
-  weekday: number // 0=일 … 6=토
-  start_time: string // "18:00:00"
+  weekday: number
+  start_time: string
   end_time: string
   space: string
-  starts_on: string // "2026-11-19" (포함)
-  ends_on: string // "2026-11-30" (포함)
+}
+
+export interface TimetableInput {
+  name: string
+  starts_on: string
+  ends_on: string
+  slots: TimetableSlotInput[]
 }
 
 // 날짜별 메모 (백엔드 schemas.py 의 NoteRead 와 같은 모양)

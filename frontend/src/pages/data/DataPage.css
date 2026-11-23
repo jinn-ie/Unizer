@@ -114,7 +114,7 @@
   color: var(--black);
 }
 
-/* 시간표가 없는 곡: 빨간 시계 */
+/* 예정된 연습이 없는 곡: 빨간 시계 */
 .song-clock {
   flex-shrink: 0;
   color: var(--red);
@@ -162,18 +162,108 @@
   font-weight: 700;
 }
 
-button.song-times.is-empty {
-  flex-direction: row;
-  flex-shrink: 0;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-button.song-times.is-empty::after {
-  content: '›';
-}
-
-button.song-times.is-empty.is-open {
-  background: var(--red);
+/* 곡 칩 아래: 시간표 생성 버튼 */
+.tt-open-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  font-size: 14px;
+  font-weight: 700;
   color: var(--white);
+}
+
+.tt-open-btn:active:not(:disabled) {
+  background: var(--surface);
+}
+
+.tt-open-btn:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+/* 시간표 목록: 카드 (누르면 시간표 수정 창) */
+.tt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tt-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  text-align: left;
+}
+
+.tt-card:active {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.tt-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tt-card-top strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tt-status {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tt-status.is-now {
+  background: rgba(62, 193, 168, 0.2);
+  color: var(--teal);
+}
+
+.tt-status.is-soon {
+  background: rgba(245, 197, 66, 0.16);
+  color: var(--yellow);
+}
+
+.tt-status.is-past {
+  background: var(--surface-2);
+  color: var(--faint);
+}
+
+.tt-card-period {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.tt-card-songs {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--faint);
 }

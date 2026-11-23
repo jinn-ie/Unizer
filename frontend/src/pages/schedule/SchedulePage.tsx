@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TouchEvent } from 'react'
-import { fetchNotes, fetchRegularPractices, fetchReservations } from '../../api'
-import type { Note, RegularPractice, Reservation } from '../../types'
+import { fetchNotes, fetchReservations } from '../../api'
+import type { Note, Reservation } from '../../types'
 import { SPACES } from '../../lib/spaces'
 import {
   addDays,
@@ -11,7 +11,7 @@ import {
   startOfWeek,
   toDateKey,
 } from '../../lib/date'
-import { expandRegularPractices, reservationToItem } from '../../lib/schedule'
+import { reservationToItem } from '../../lib/schedule'
 import { WeekCalendar } from './WeekCalendar'
 import { DaySheet } from './DaySheet'
 import './SchedulePage.css'
@@ -19,7 +19,7 @@ import './SchedulePage.css'
 type LoadState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; reservations: Reservation[]; regulars: RegularPractice[]; notes: Note[] }
+  | { status: 'ready'; reservations: Reservation[]; notes: Note[] }
 
 // 주소에 ?week=2026-11-09 가 있으면 그 주를 보여줌 (카톡으로 특정 주 공유용)
 function initialWeek(): Date {
@@ -34,17 +34,15 @@ export function SchedulePage() {
   const [now, setNow] = useState(() => new Date())
   const [sheet, setSheet] = useState<{ day: Date; focusKey?: string } | null>(null)
 
-  // 리더 연습 + 정규연습 + 메모 API 를 동시에 호출하고, 다 오면 화면에 반영
+  // 연습 + 메모 API 를 동시에 호출하고, 다 오면 화면에 반영
   // 메모는 부가 기능이라, 실패해도 빈 목록으로 두고 캘린더는 그대로 보여줌
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
       fetchReservations(controller.signal),
-      fetchRegularPractices(controller.signal),
       fetchNotes(controller.signal).catch(() => [] as Note[]),
     ])
-      .then(([reservations, regulars, notes]) =>
-        setLoad({ status: 'ready', reservations, regulars, notes }),
+      .then(([reservations, notes]) => setLoad({ status: 'ready', reservations, notes }),
       )
       .catch((e) => {
         if (!controller.signal.aborted) {
@@ -69,14 +67,10 @@ export function SchedulePage() {
     window.history.replaceState(null, '', url)
   }, [weekStart, isThisWeek])
 
-  // 보고 있는 주의 일정 = 리더 연습 + 그 주 날짜로 펼친 정규연습
-  const items = useMemo(() => {
-    if (load.status !== 'ready') return []
-    return [
-      ...load.reservations.map(reservationToItem),
-      ...expandRegularPractices(load.regulars, weekStart),
-    ]
-  }, [load, weekStart])
+  const items = useMemo(
+    () => (load.status === 'ready' ? load.reservations.map(reservationToItem) : []),
+    [load],
+  )
 
   const weekCount = useMemo(() => {
     const s = weekStart.getTime()
@@ -108,11 +102,11 @@ export function SchedulePage() {
       <aside className="notice" aria-label="안내">
         <ul>
           <li>
-            <span>서로 배려하면서 잡아주세요</span>
+            <span>서로 배려하면서 잡아주세요.</span>
           </li>
           <li>
             <span>
-              대회의실은 타동아리의 예약도 확인해주세요{' '}
+              대회의실은 타동아리의 예약도 확인해주세요.{' '}
               <a
                 className="notice-link"
                 href="https://space.pusan.ac.kr/"
@@ -122,6 +116,9 @@ export function SchedulePage() {
                 교육공간 예약시스템
               </a>
             </span>
+          </li>
+          <li>
+            <span>바깥거울-대회의실 간 이동은 예약 순서에 따른 유동적 사용을 허용합니다.</span>
           </li>
         </ul>
       </aside>

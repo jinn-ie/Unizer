@@ -1,0 +1,604 @@
+/* ── 시간표 생성 (전체 화면) ─────────────── */
+.tb-root {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--bg);
+  animation: tb-in 0.18s ease-out;
+}
+
+@keyframes tb-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.tb {
+  max-width: 480px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 12px) var(--pad) calc(env(safe-area-inset-bottom) + 12px);
+}
+
+.tb > * {
+  flex-shrink: 0;
+}
+
+/* 끄는 중: 글자 선택 · 손가락 메뉴 막기 */
+body.tb-dragging,
+body.tb-dragging * {
+  cursor: grabbing !important;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tb-head {
+  display: flex;
+  align-items: center;
+}
+
+.tb-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.tb-close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.tb-close:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 이름 · 기간 */
+.tb-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tb-name,
+.tb-period input {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--white);
+  font: inherit;
+  font-size: 16px; /* 16px 미만이면 아이폰이 입력할 때 화면을 확대함 */
+  outline: none;
+}
+
+.tb-name {
+  width: 100%;
+  padding: 0 12px;
+}
+
+.tb-name::placeholder {
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.tb-name:focus,
+.tb-period input:focus {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.tb-period {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-period input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tb-tilde {
+  color: var(--faint);
+  font-weight: 700;
+}
+
+.tb-weeks {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.tb-weeks.is-bad {
+  font-size: 11px;
+  color: var(--red);
+}
+
+/* 곡 칩 줄 (가로 스크롤) */
+.tb-tray {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 1px 0;
+}
+
+.tb-tray::-webkit-scrollbar {
+  display: none;
+}
+
+.tb-tray-empty {
+  padding: 8px 2px;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+.tb-chip,
+.tb-block {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* 아이폰: 길게 누르면 뜨는 미리보기 막기 */
+}
+
+.tb-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.tb-chip:active {
+  transform: scale(0.96);
+}
+
+.tb-chip.is-placed {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.tb-chip b {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--teal);
+  color: var(--black);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tb-chip.is-lifted {
+  opacity: 0.35;
+}
+
+.tb-hint {
+  margin: -4px 2px 0;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.tb-hint b {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* 칩을 짧게 눌렀을 때: 안내문 반짝 */
+.tb-hint.is-flash {
+  animation: tb-flash 0.9s ease-out;
+}
+
+@keyframes tb-flash {
+  0%,
+  40% {
+    color: var(--yellow);
+  }
+}
+
+.tb-hint.is-flash b {
+  animation: tb-flash 0.9s ease-out;
+}
+
+/* ── 주간 표 ── */
+.tb-grid {
+  flex: 1 1 auto;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tb-grid-head,
+.tb-body {
+  display: grid;
+  grid-template-columns: var(--time-col) minmax(0, 1fr);
+}
+
+.tb-grid-head {
+  grid-template-columns: var(--time-col) repeat(7, minmax(0, 1fr));
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tb-grid-head span {
+  padding: 8px 0 7px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tb-grid-head .is-sat {
+  color: #7fb2ff;
+}
+
+.tb-grid-head .is-sun {
+  color: #ff8a83;
+}
+
+.tb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.tb-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.tb-times {
+  position: relative;
+}
+
+.tb-times span {
+  position: absolute;
+  right: 6px;
+  transform: translateY(2px);
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.tb-cols {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tb-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tb-lines i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.tb-lines i.is-hour {
+  background: var(--line-strong);
+}
+
+.tb-day {
+  position: relative;
+  border-left: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+
+/* 표에 놓인 시간대 */
+.tb-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  padding: 3px 3px 2px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c) 30%, var(--surface-2));
+  border-left: 3px solid var(--c);
+  text-align: left;
+  overflow: hidden;
+  touch-action: manipulation;
+  transition: opacity 0.15s;
+}
+
+.tb-block-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--white);
+  word-break: break-all;
+}
+
+.tb-block-time {
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tb-block-time em {
+  font-style: normal;
+  color: var(--c);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tb-block.is-selected {
+  outline: 2px solid var(--white);
+  outline-offset: -1px;
+  z-index: 2;
+}
+
+.tb-block.is-conflict {
+  background: color-mix(in srgb, var(--red) 35%, var(--surface-2));
+  box-shadow: inset 0 0 0 1.5px var(--red);
+}
+
+.tb-block.is-lifted {
+  opacity: 0.3;
+}
+
+/* 끄는 중: 놓일 자리 미리보기 */
+.tb-preview {
+  position: absolute; /* left · width 는 칸 나누기에 맞춰 style 로 */
+  z-index: 3;
+  padding: 2px 3px;
+  border-radius: 5px;
+  border: 1.5px dashed var(--c);
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tb-preview em {
+  display: block;
+  font-style: normal;
+  color: var(--c);
+  white-space: nowrap;
+}
+
+/* 손가락을 따라다니는 칩 */
+.tb-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--white);
+  border-left: 5px solid var(--c);
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* ── 선택한 시간대 편집 ── */
+.tb-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tb-ed-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-ed-top strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.tb-ed-del,
+.tb-ed-done {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tb-ed-del {
+  background: rgba(229, 83, 75, 0.16);
+  color: #ff8a83;
+}
+
+.tb-ed-done {
+  background: var(--white);
+  color: var(--black);
+}
+
+.tb-ed-days,
+.tb-ed-spaces {
+  display: grid;
+  gap: 4px;
+}
+
+.tb-ed-days {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tb-ed-spaces {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tb-ed-days button,
+.tb-ed-spaces button {
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tb-ed-days button.is-on {
+  background: var(--white);
+  color: var(--black);
+}
+
+.tb-ed-spaces button {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tb-ed-spaces button.is-on {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 20%, var(--surface));
+  color: var(--c);
+}
+
+.tb-ed-time {
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tb-ed-time.is-open {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.tb-editor .qa-wheels {
+  margin-top: 0;
+}
+
+.tb-editor .wheel {
+  background: var(--surface);
+}
+
+/* ── 아래 버튼 ── */
+.tb-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tb-warn {
+  margin: 0 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #ff8a83;
+}
+
+.tb-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6px;
+}
+
+.tb-cancel,
+.tb-submit {
+  height: 46px;
+  border-radius: 12px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.tb-cancel {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.tb-submit {
+  background: var(--white);
+  color: var(--black);
+}
+
+.tb-submit:disabled {
+  background: var(--surface);
+  color: var(--faint);
+  cursor: default;
+}
+
+/* 수정 모드: 이미 시작한 시간표 안내 */
+.tb-note {
+  margin: 0 2px;
+  font-size: 11.5px;
+  color: var(--yellow);
+}
+
+/* 수정 모드: 시간표 삭제 (두 번 눌러야) */
+.tb-delete {
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(229, 83, 75, 0.16);
+  color: #ff8a83;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tb-delete.is-confirm {
+  background: var(--red);
+  color: var(--white);
+}
+
+/* 곡이 아닌 일정 칩 (돌리기 · 기본기): 점선 테두리로 곡과 구분 */
+.tb-chip.is-preset {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--muted);
+}

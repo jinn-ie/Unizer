@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { fetchMembers, fetchRegularPractices, fetchSongMembers, fetchSongs } from '../../api'
-import type { Member, RegularPractice, Song, SongMember } from '../../types'
-import { toDateKey, WEEKDAYS } from '../../lib/date'
+import { fetchMembers, fetchReservations, fetchSongMembers, fetchSongs, fetchTimetables } from '../../api'
+import type { Member, Reservation, Song, SongMember, Timetable } from '../../types'
+import { parseDateKey, parseLocal, toDateKey } from '../../lib/date'
+import { Toast } from '../../components/Toast'
 import { SongImport } from './SongImport'
-import { TimetableForm } from './TimetableForm'
-import type { Period } from './TimetableForm'
+import { TimetableBuilder } from './TimetableBuilder'
 import './DataPage.css'
 
 type LoadState =
@@ -15,20 +15,36 @@ type LoadState =
       members: Member[]
       songs: Song[]
       songMembers: SongMember[]
-      regulars: RegularPractice[]
+      reservations: Reservation[]
+      timetables: Timetable[]
+      loadedAt: number // 불러온 시각 (이후에 끝나는 연습 = 예정된 연습)
     }
-
-/** "18:00:00" → "18:00" */
-const hhmm = (t: string) => t.slice(0, 5)
 
 interface Props {
   view: 'songs' | 'members' // 곡 탭 / 부원 탭
 }
 
-// 곡 탭: 곡 등록 + 곡 칩(누르면 인원·시간표·멤버) / 부원 탭: 기수별 부원
+// 시간표 창: 새로 만들기 / 저장된 시간표 고치기
+type Builder = { mode: 'new' } | { mode: 'edit'; timetable: Timetable }
+
+/** "2026-11-24" → "11/24" */
+function shortDate(key: string): string {
+  const d = parseDateKey(key)
+  return d ? `${d.getMonth() + 1}/${d.getDate()}` : key
+}
+
+/** 오늘 기준 시간표 상태 */
+function timetableStatus(t: Timetable, today: string): { label: string; cls: string } {
+  if (t.ends_on < today) return { label: '지남', cls: 'is-past' }
+  if (t.starts_on > today) return { label: '예정', cls: 'is-soon' }
+  return { label: '진행 중', cls: 'is-now' }
+}
+
+// 곡 탭: 곡 등록 + 곡 칩(누르면 인원·예정 연습·멤버) + 시간표 목록 · 생성 / 부원 탭: 기수별 부원
 export function DataPage({ view }: Props) {
   const [openId, setOpenId] = useState<number | null>(null) // 펼친 곡 (한 번에 하나, 기본은 접힘)
-  const [formOpen, setFormOpen] = useState(false) // 펼친 곡의 시간표 등록 칸
+  const [builder, setBuilder] = useState<Builder | null>(null) // 시간표 창
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -38,10 +54,20 @@ export function DataPage({ view }: Props) {
       fetchMembers(controller.signal),
       fetchSongs(controller.signal),
       fetchSongMembers(controller.signal),
-      fetchRegularPractices(controller.signal),
+      // 예정 연습 수는 부가 정보라, 실패해도 빈 목록으로 두고 곡 목록은 그대로 보여줌
+      fetchReservations(controller.signal).catch(() => [] as Reservation[]),
+      fetchTimetables(controller.signal).catch(() => [] as Timetable[]),
     ])
-      .then(([members, songs, songMembers, regulars]) =>
-        setLoad({ status: 'ready', members, songs, songMembers, regulars }),
+      .then(([members, songs, songMembers, reservations, timetables]) =>
+        setLoad({
+          status: 'ready',
+          members,
+          songs,
+          songMembers,
+          reservations,
+          timetables,
+          loadedAt: Date.now(),
+        }),
       )
       .catch((e) => {
         if (!controller.signal.aborted) {
@@ -62,34 +88,15 @@ export function DataPage({ view }: Props) {
     return [...byGen.entries()].sort((a, b) => a[0] - b[0])
   }, [load])
 
-  // 새 시간표의 적용 기간: 지금 쓰이는 정규연습 기간 중 가장 많은 것 (다른 곡들과 같게)
-  // 하나도 없으면 오늘 ~ 이번 달 말일
-  const period = useMemo<Period>(() => {
-    const today = toDateKey(new Date())
-    const counts = new Map<string, number>()
-    if (load.status === 'ready') {
-      for (const r of load.regulars) {
-        if (r.ends_on < today) continue
-        const k = `${r.starts_on}|${r.ends_on}`
-        counts.set(k, (counts.get(k) ?? 0) + 1)
-      }
-    }
-    const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
-    if (best) {
-      const [startsOn, endsOn] = best[0].split('|')
-      return { startsOn, endsOn }
-    }
-    const now = new Date()
-    return { startsOn: today, endsOn: toDateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0)) }
-  }, [load])
-
-  // 곡별 참여자 (리더가 맨 앞) + 정규연습 시간
+  // 곡별 참여자 (리더가 맨 앞) + 아직 끝나지 않은 연습 수
   const songs = useMemo(() => {
     if (load.status !== 'ready') return []
     const memberById = new Map(load.members.map((m) => [m.id, m]))
-    // 아직 끝나지 않은 정규연습만 (지난달 시간표는 제외)
-    const today = toDateKey(new Date())
-    const current = load.regulars.filter((r) => r.song_id !== null && r.ends_on >= today)
+    const upcoming = new Map<number, number>()
+    for (const r of load.reservations) {
+      if (r.song_id === null || parseLocal(r.end_at).getTime() <= load.loadedAt) continue
+      upcoming.set(r.song_id, (upcoming.get(r.song_id) ?? 0) + 1)
+    }
     return load.songs.map((song) => {
       const rows = load.songMembers
         .filter((sm) => sm.song_id === song.id)
@@ -100,11 +107,24 @@ export function DataPage({ view }: Props) {
           const m = memberById.get(sm.member_id)
           return m ? [{ ...m, leader: sm.leader }] : []
         }),
-        // "월 18:00–20:00" (월요일부터 순서대로)
-        times: current
-          .filter((r) => r.song_id === song.id)
-          .sort((a, b) => (a.weekday || 7) - (b.weekday || 7) || a.start_time.localeCompare(b.start_time))
-          .map((r) => `${WEEKDAYS[r.weekday]} ${hhmm(r.start_time)}–${hhmm(r.end_time)}`),
+        upcoming: upcoming.get(song.id) ?? 0,
+      }
+    })
+  }, [load])
+
+  // 시간표 목록: 들어간 곡 이름(곡 목록 순서) + 일정 이름(기본기 등) + 오늘 기준 상태
+  const timetables = useMemo(() => {
+    if (load.status !== 'ready') return []
+    const today = toDateKey(new Date(load.loadedAt))
+    return load.timetables.map((t) => {
+      const ids = new Set(t.slots.map((s) => s.song_id))
+      const songTitles = load.songs.filter((s) => ids.has(s.id)).map((s) => s.title)
+      const extras = [...new Set(t.slots.flatMap((s) => (s.title ? [s.title] : [])))]
+      return {
+        ...t,
+        songCount: songTitles.length,
+        names: [...songTitles, ...extras],
+        status: timetableStatus(t, today),
       }
     })
   }, [load])
@@ -167,26 +187,23 @@ export function DataPage({ view }: Props) {
           <div className="song-chips">
             {songs.map((song) => {
               const open = openId === song.id
-              const needsTime = song.times.length === 0
+              const noPractice = song.upcoming === 0
               return (
                 <Fragment key={song.id}>
                   <button
                     type="button"
                     className={`song-chip${open ? ' is-open' : ''}`}
                     aria-expanded={open}
-                    onClick={() => {
-                      setOpenId(open ? null : song.id)
-                      setFormOpen(false)
-                    }}
+                    onClick={() => setOpenId(open ? null : song.id)}
                   >
                     {song.title}
-                    {needsTime && (
+                    {noPractice && (
                       <svg
                         className="song-clock"
                         viewBox="0 0 24 24"
                         width="15"
                         height="15"
-                        aria-label="시간표 등록 필요"
+                        aria-label="예정된 연습 없음"
                       >
                         <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.2" />
                         <path
@@ -205,34 +222,10 @@ export function DataPage({ view }: Props) {
                     <div className="song-detail">
                       <div className="song-meta">
                         <span className="song-count">{song.people.length}명</span>
-                        {needsTime ? (
-                          <button
-                            type="button"
-                            className={`song-times is-empty${formOpen ? ' is-open' : ''}`}
-                            onClick={() => setFormOpen((f) => !f)}
-                            aria-expanded={formOpen}
-                          >
-                            시간표 등록
-                          </button>
-                        ) : (
-                          <span className="song-times">
-                            {song.times.map((t) => (
-                              <span key={t}>{t}</span>
-                            ))}
-                          </span>
-                        )}
+                        <span className={`song-times${noPractice ? ' is-empty' : ''}`}>
+                          {noPractice ? '예정된 연습 없음' : `예정된 연습 ${song.upcoming}회`}
+                        </span>
                       </div>
-                      {needsTime && formOpen && (
-                        <TimetableForm
-                          songId={song.id}
-                          period={period}
-                          onCancel={() => setFormOpen(false)}
-                          onSaved={() => {
-                            setFormOpen(false)
-                            setReloadKey((k) => k + 1)
-                          }}
-                        />
-                      )}
                       <ul className="name-list">
                         {song.people.map((p) => (
                           <li key={p.id} className={p.leader ? 'is-leader' : undefined}>
@@ -248,6 +241,74 @@ export function DataPage({ view }: Props) {
           </div>
         </section>
       )}
+
+      {view === 'songs' && (
+        <section className="data-sec">
+          <h2>
+            시간표 <span>{timetables.length}개</span>
+          </h2>
+          {timetables.length > 0 && (
+            <ul className="tt-list">
+              {timetables.map((t) => (
+                <li key={t.id}>
+                  <button type="button" className="tt-card" onClick={() => setBuilder({ mode: 'edit', timetable: t })}>
+                    <span className="tt-card-top">
+                      <strong>{t.name}</strong>
+                      <em className={`tt-status ${t.status.cls}`}>{t.status.label}</em>
+                    </span>
+                    <span className="tt-card-period">
+                      {shortDate(t.starts_on)} – {shortDate(t.ends_on)} · {t.songCount}곡
+                    </span>
+                    <span className="tt-card-songs">{t.names.join(' · ')}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            type="button"
+            className="tt-open-btn"
+            onClick={() => setBuilder({ mode: 'new' })}
+            disabled={songs.length === 0}
+          >
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
+              <rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M3.5 10h17M9 5v15M8 3v3M16 3v3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            시간표 생성
+          </button>
+        </section>
+      )}
+
+      {builder && (
+        <TimetableBuilder
+          songs={load.songs}
+          timetable={builder.mode === 'edit' ? builder.timetable : undefined}
+          onClose={() => setBuilder(null)}
+          onSaved={(saved, mode) => {
+            setBuilder(null)
+            setReloadKey((k) => k + 1)
+            setToast({
+              id: Date.now(),
+              message: `'${saved.name}' 시간표를 ${mode === 'created' ? '등록' : '수정'}했어요.`,
+            })
+          }}
+          onDeleted={(name) => {
+            setBuilder(null)
+            setReloadKey((k) => k + 1)
+            setToast({ id: Date.now(), message: `'${name}' 시간표를 삭제했어요.` })
+          }}
+        />
+      )}
+
+      {toast && <Toast key={toast.id} kind="success" message={toast.message} onDone={() => setToast(null)} />}
     </main>
   )
 }

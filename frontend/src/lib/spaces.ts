@@ -8,9 +8,9 @@ export interface SpaceInfo {
 
 export const SPACES: SpaceInfo[] = [
   { key: '동방', label: '동방', color: 'var(--red)' },
+  { key: '바깥거울', label: '바깥거울', color: 'var(--yellow)' },
   { key: '대회의실1', label: '대회의실 1', color: 'var(--teal)' },
   { key: '대회의실2', label: '대회의실 2', color: 'var(--teal)' },
-  { key: '바깥거울', label: '바깥거울', color: 'var(--gray)' },
 ]
 
 export const SPACE_INDEX = new Map(SPACES.map((s, i) => [s.key, i]))
