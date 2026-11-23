@@ -1,0 +1,58 @@
+# main 에 푸시하면: ① 검사 → ② 통과하면 서버에서 deploy.sh 실행
+# 진행 상황 · 로그: GitHub 저장소의 Actions 탭
+name: 배포
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: # 문서만 바뀐 푸시는 배포 안 함
+      - '**.md'
+      - 'backend/ERD.txt'
+  workflow_dispatch: # Actions 탭에서 손으로 다시 돌릴 수 있게
+
+# 푸시가 연달아 와도 배포는 한 번에 하나씩 (앞의 배포가 끝나면 다음 것)
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: 검사 (백엔드 import · 프론트 빌드 · lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 백엔드 패키지 설치
+        run: pip install -r backend/requirements.txt
+      - name: 백엔드 import 확인
+        working-directory: backend
+        run: python -c "import app.main"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 프론트 빌드 · lint
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run lint
+
+  deploy:
+    name: 서버 배포
+    needs: check # 검사가 실패하면 배포 안 함
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH 로 서버에 접속해서 deploy.sh 실행
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 15m
+          script: bash ~/deploy.sh
