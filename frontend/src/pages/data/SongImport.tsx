@@ -112,8 +112,8 @@ export function SongImport({ onImported }: Props) {
   }
 
   return (
-    <section className="data-sec import">
-      <h2>곡 등록</h2>
+    <div className="import">
+      <h3 className="import-head">곡 등록</h3>
       <p className="import-hint">
         아래 양식과 같이, 엔트리 결과를 그대로 붙여 넣으세요.
       </p>
@@ -247,6 +247,6 @@ export function SongImport({ onImported }: Props) {
       {toast && (
         <Toast key={toast.id} message={toast.message} kind={toast.kind} onDone={() => setToast(null)} />
       )}
-    </section>
+    </div>
   )
 }

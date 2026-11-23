@@ -40,7 +40,7 @@ function timetableStatus(t: Timetable, today: string): { label: string; cls: str
   return { label: '진행 중', cls: 'is-now' }
 }
 
-// 곡 탭: 곡 등록 + 곡 칩(누르면 인원·예정 연습·멤버) + 시간표 목록 · 생성 / 부원 탭: 기수별 부원
+// 곡 탭: 곡 칩(누르면 인원·예정 연습·멤버) + 그 아래 곡 등록 / 시간표 목록 · 생성 / 부원 탭: 기수별 부원
 export function DataPage({ view }: Props) {
   const [openId, setOpenId] = useState<number | null>(null) // 펼친 곡 (한 번에 하나, 기본은 접힘)
   const [builder, setBuilder] = useState<Builder | null>(null) // 시간표 창
@@ -174,8 +174,6 @@ export function DataPage({ view }: Props) {
         </section>
       )}
 
-      {view === 'songs' && <SongImport onImported={() => setReloadKey((k) => k + 1)} />}
-
       {view === 'songs' && (
         <section className="data-sec">
           <h2>
@@ -239,6 +237,9 @@ export function DataPage({ view }: Props) {
               )
             })}
           </div>
+
+          {/* 곡 목록 바로 아래: 붙여넣기로 곡 등록 */}
+          <SongImport onImported={() => setReloadKey((k) => k + 1)} />
         </section>
       )}
 

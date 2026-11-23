@@ -1,4 +1,14 @@
-/* ── 곡 등록 (붙여넣기) ───────────────── */
+/* ── 곡 등록 (붙여넣기): 곡 목록 아래 하위 요소 ── */
+.import {
+  margin-top: 18px;
+}
+
+.import-head {
+  margin: 0 2px 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .import-hint {
   margin: -4px 2px 10px;
   font-size: 12.5px;
