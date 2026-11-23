@@ -14,35 +14,38 @@
 
 ## 로컬에서 실행하기
 
-터미널을 두 개 열어서 백엔드와 프론트를 각각 띄워요. (아래 명령은 Windows PowerShell 기준)
+명령 프롬프트(cmd) 창을 두 개 열어서 백엔드와 프론트를 각각 띄워요. (아래 명령은 Windows cmd 기준, `rem` 줄은 설명이라 입력하지 않아도 돼요)
 
 ### 처음 한 번만
 
-```powershell
-# 백엔드
+```bat
+rem 백엔드
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\activate.bat
 pip install -r requirements.txt
-python -m app.seed          # 테이블 만들고 부원 목록(data/members.csv) 넣기
+rem 테이블 만들고 부원 목록(data/members.csv) 넣기
+python -m app.seed
 
-# 프론트엔드 (다른 터미널)
+rem 프론트엔드 (다른 cmd 창)
 cd frontend
 npm install
 ```
 
 ### 매번
 
-```powershell
-# 터미널 1 — 백엔드 (http://127.0.0.1:8000)
+```bat
+rem cmd 창 1 — 백엔드 (http://127.0.0.1:8000)
 cd backend
-.venv\Scripts\activate
+.venv\Scripts\activate.bat
 uvicorn app.main:app --reload
 
-# 터미널 2 — 프론트엔드 (http://localhost:5173)
+rem cmd 창 2 — 프론트엔드 (http://localhost:5173)
 cd frontend
 npm run dev
 ```
+
+가상환경이 켜지면 줄 앞에 `(.venv)`가 붙어요. 끌 때는 `deactivate`를 입력하면 돼요.
 
 브라우저에서 http://localhost:5173 을 열면 돼요.
 
