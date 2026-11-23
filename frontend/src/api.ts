@@ -1,6 +1,7 @@
 import type {
   FeedbackInput,
   ImportSong,
+  LoginInput,
   Member,
   Note,
   NoteInput,
@@ -114,4 +115,17 @@ export function deleteNote(id: number) {
 // ── 의견 보내기 ──
 export function sendFeedback(input: FeedbackInput) {
   return sendJson<unknown>('/api/feedback', 'POST', input)
+}
+
+// ── 로그인 ──
+export function fetchCurrentMember(signal?: AbortSignal) {
+  return getJson<Member | null>('/api/auth/me', signal)
+}
+
+export function loginMember(input: LoginInput) {
+  return sendJson<Member>('/api/auth/login', 'POST', input)
+}
+
+export function logoutMember() {
+  return sendJson<void>('/api/auth/logout', 'POST')
 }

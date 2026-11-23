@@ -97,8 +97,22 @@ frontend/
 | **곡** — 곡 목록, 붙여넣기로 곡 등록, 시간표 등록·수정·삭제 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableBuilder`) | `routers/songs.py`<br>`routers/timetables.py`<br>`services/timetables.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`timetables`<br>`timetable_slots` | jinn-ie |
 | **부원** — 기수별 부원 목록 | 부원 | `pages/data/DataPage.tsx` | `routers/members.py`<br>`seed.py`, `data/members.csv` | `members` | jinn-ie |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
+| **로그인** — 기수·이름으로 로그인, 로그인 상태 확인 및 로그아웃 | 상단 로그인 | `pages/auth/` | `routers/auth.py`, `member_password.py` | `member_passwords`<br>`login_sessions` | |
 
 새 기능을 만들면 이 표에 한 줄 추가해 주세요.
+
+### 부원 로그인
+
+등록된 기수와 이름으로 로그인해요. 운영자가 비밀번호를 설정한 부원은 로그인할 때 비밀번호도 입력해요. 기수와 이름만으로 로그인하는 계정은 명단을 아는 사람도 사용할 수 있어요. 로그인 상태는 브라우저에서 7일간 유지되며, 기존 화면은 로그인 없이 이용할 수 있어요.
+
+로컬 DB를 백업한 뒤 `backend` 폴더에서 `python -m app.migrate`를 실행하면 로그인 테이블이 생겨요. 같은 폴더에서 예시 기수와 이름을 실제 부원 정보로 바꿔 비밀번호를 관리해요.
+
+```bat
+python -m app.member_password 42 "부원 이름"
+python -m app.member_password 42 "부원 이름" --clear
+```
+
+설정 명령을 실행하면 비밀번호를 입력하는 프롬프트가 표시돼요. 비밀번호를 설정하거나 해제하면 그 부원은 다시 로그인해야 해요.
 
 ### 연습과 시간표의 관계
 

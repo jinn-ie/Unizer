@@ -1,0 +1,56 @@
+.login-entry {
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.login-entry[aria-pressed='true'] {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.login-card {
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.login-card h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.login-form input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.login-form span,
+.login-form p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login-card .login-error {
+  margin-bottom: 0;
+  color: var(--red);
+}

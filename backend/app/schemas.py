@@ -1,5 +1,5 @@
 from datetime import date, datetime, time
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from app.models import Space
 
 class ReservationIn(BaseModel):
@@ -155,3 +155,15 @@ class TimetableRead(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     slots: list[SlotRead]
+
+
+# ── 로그인 ──
+class LoginIn(BaseModel):
+    gen: int = Field(ge=1, le=2_147_483_647)
+    name: str = Field(min_length=1, max_length=30)
+    password: SecretStr | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
