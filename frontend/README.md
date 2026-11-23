@@ -1,32 +1,17 @@
-# React + TypeScript + Vite
+# Unizer 프론트엔드
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React · TypeScript · Vite로 만든 모바일 웹 화면이에요.
+실행 방법, 폴더 구조, 기능 지도는 [루트 README](../README.md)에 있어요.
 
-Currently, two official plugins are available:
+## 자주 쓰는 명령 (`frontend` 폴더에서)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bat
+rem 개발 서버 (http://localhost:5173, /api 요청은 8000번 백엔드로 넘김)
+npm run dev
 
-## React Compiler
+rem 타입 검사 + 배포용 빌드 (dist 폴더)
+npm run build
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+rem 코드 검사 (oxlint)
+npm run lint
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
