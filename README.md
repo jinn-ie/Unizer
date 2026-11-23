@@ -163,26 +163,35 @@ python -c "import sqlite3; c = sqlite3.connect('unizer.db'); c.execute('ALTER TA
 
 ## 브랜치 · 커밋 규칙
 
-`main`은 **서버에 올라가는 코드**예요. `main`에 직접 커밋하지 않고, 브랜치에서 작업한 뒤 PR로 합쳐요.
+`main`은 **서버에 올라가는 코드**예요. `main`에 직접 커밋하지 않고, 브랜치에서 작업한 뒤 합쳐요.
 
 ### 흐름
 
-```powershell
+```bat
 git switch main
-git pull                              # 최신 main 받기
-git switch -c feat/events             # 작업 브랜치 만들기
+rem 최신 main 받기
+git pull
+rem 작업 브랜치 만들기
+git switch -c feat/events
 
-# ... 작업하고 커밋 ...
-
-git push -u origin feat/events        # GitHub에 올리기
+rem ... 작업하고 커밋 ...
 ```
 
+**지금처럼 혼자 작업할 때:** PR 없이 바로 `main`에 합치고 올려요.
+```bat
+git switch main
+git merge --ff-only feat/events
+git push
+git branch -d feat/events
+```
+
+**팀원이 생기면:** `git push -u origin feat/events`로 브랜치를 올린 뒤
 1. GitHub에서 `feat/events` → `main`으로 **PR(Pull Request)** 을 만들어요.
 2. **다른 한 명이 확인**하고 머지해요. (기능 담당자가 아니어도 화면이 잘 뜨는지 정도는 같이 봐요)
 3. 머지한 뒤에는 로컬 브랜치를 정리해요: `git switch main` → `git pull` → `git branch -d feat/events`
 
 작업이 길어지면 중간중간 `main`의 최신 내용을 받아오세요.
-```powershell
+```bat
 git switch feat/events
 git merge main
 ```
@@ -208,6 +217,7 @@ fix(frontend): 보충 수정 시 시간이 초기화되는 문제 수정
 
 - **종류:** `feat` 새 기능 · `fix` 버그 수정 · `refactor` 구조 정리 · `chore` 설정·문서
 - **범위:** `backend` 또는 `frontend`
+- **커밋은 수정 단위로 나눠요.** 여러 작업을 한 커밋에 뭉치지 말고, 변경 하나(예: "공간 순서 변경", "시간표 API 추가")마다 커밋해요. 나중에 확인하거나 되돌리기 쉬워요.
 
 ---
 
@@ -215,7 +225,7 @@ fix(frontend): 보충 수정 시 시간이 초기화되는 문제 수정
 
 서버(Oracle Cloud) 한 대에 nginx + uvicorn + SQLite로 올라가 있어요. 서버 접속 권한은 jinn-ie에게 있어요.
 
-1. PR이 `main`에 머지되면
+1. 작업이 `main`에 합쳐지면
 2. jinn-ie가 서버에 접속해서 배포 스크립트를 실행해요.
    ```bash
    ~/deploy.sh
