@@ -36,8 +36,35 @@ def has_column(conn, table: str, column: str) -> bool:
 #
 # 반영 끝나서 지운 단계: 2026-11-23 regular_practices 삭제, reservations.slot_id 추가
 
+def move_passwords_to_members(conn) -> bool:
+    """2026-11-23 member_passwords 테이블 → members.password_hash 컬럼으로 옮김"""
+    changed = False
+
+    # 1. 컬럼 추가: member_passwords 테이블이 없던 DB(로그인 기능 전 DB)에도 컬럼은 있어야 해요.
+    if not has_column(conn, "members", "password_hash"):
+        conn.execute(text("ALTER TABLE members ADD COLUMN password_hash VARCHAR(96)"))
+        changed = True
+
+    # 2. 옛 테이블이 남아 있으면, 비밀번호가 있는 부원만 해시를 복사한 뒤 테이블을 지워요.
+    #    (복사 → 삭제 순서가 중요해요. 거꾸로 하면 설정해 둔 비밀번호가 사라져요.)
+    if has_table(conn, "member_passwords"):
+        conn.execute(text("""
+            UPDATE members
+            SET password_hash = (
+                SELECT password_hash FROM member_passwords
+                WHERE member_passwords.member_id = members.id
+            )
+            WHERE id IN (SELECT member_id FROM member_passwords)
+        """))
+        conn.execute(text("DROP TABLE member_passwords"))
+        changed = True
+
+    return changed
+
+
 STEPS = [
     # add_reservation_memo,
+    move_passwords_to_members,
 ]
 
 

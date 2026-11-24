@@ -8,7 +8,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import LoginSession, Member, MemberPassword, now_kst
+from app.models import LoginSession, Member, now_kst
 from app.schemas import LoginIn, MemberRead
 from app.services.passwords import verify_password
 
@@ -33,18 +33,17 @@ def login(data: LoginIn, request: Request, response: Response, db: Db, token: Se
     if member is None or len(password) > 128:
         raise error
 
-    credential = db.get(MemberPassword, member.id)
-    checked_hash = credential.password_hash if credential else None
-    if credential is None:
+    checked_hash = member.password_hash  # None이면 비밀번호를 설정하지 않은 부원이에요.
+    if checked_hash is None:
         if password:
             raise error
-    elif not password or not verify_password(password, credential.password_hash):
+    elif not password or not verify_password(password, checked_hash):
         raise error
 
     now = now_kst()
     db.execute(delete(LoginSession).where(LoginSession.expires_at <= now))
     # 쓰기 잠금을 얻은 뒤 다시 확인해요. 검증하는 동안 운영자가 비밀번호를 바꿀 수 있어요.
-    current_hash = db.scalar(select(MemberPassword.password_hash).where(MemberPassword.member_id == member.id))
+    current_hash = db.scalar(select(Member.password_hash).where(Member.id == member.id))
     if current_hash != checked_hash:
         raise error
     if token:
