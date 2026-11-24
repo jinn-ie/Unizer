@@ -103,11 +103,14 @@ function MyPracticeCalendar({ member }: { member: Member }) {
   const items = useMemo(() => {
     if (load.status !== 'ready') return []
     return load.reservations
-      .filter((r) =>
-        r.song_id !== null ? mySongIds.has(r.song_id) : isMyCommonSchedule(r, member.gen),
-      )
+      .filter((r) => {
+        if (r.song_id === null) return isMyCommonSchedule(r, member.gen)
+        // 개인 보충: 같은 곡이어도 함께하는 사람으로 고른 부원(리더 포함)에게만
+        if (r.personal) return (r.member_ids ?? []).includes(member.id)
+        return mySongIds.has(r.song_id) // 단체 연습: 그 곡 멤버 모두
+      })
       .map(reservationToItem)
-  }, [load, mySongIds, member.gen])
+  }, [load, mySongIds, member.gen, member.id])
 
   const weekCount = useMemo(() => {
     const s = weekStart.getTime()
