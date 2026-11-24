@@ -5,6 +5,8 @@ import { Toast } from '../../components/Toast'
 import './SongImport.css'
 
 interface Props {
+  open: boolean // 펼침 여부 (여는 버튼은 곡 탭 맨 위에 있음)
+  onClose: () => void
   onImported: () => void // 등록 후 아래 부원/곡 목록 다시 불러오기
 }
 
@@ -61,8 +63,9 @@ function judge(d: Draft): Status {
   }
 }
 
-// 내부 데이터 탭 맨 위: 곡 + 멤버 글자를 붙여넣어 한꺼번에 등록
-export function SongImport({ onImported }: Props) {
+// 곡 탭 맨 위 "+ 곡 등록"을 누르면 펼쳐짐: 곡 + 멤버 글자를 붙여넣어 한꺼번에 등록
+// 닫혀도 이 부품은 화면에 남아 있어서, 붙여넣은 글자 등은 그대로 → 다시 열면 이어서 할 수 있어요
+export function SongImport({ open, onClose, onImported }: Props) {
   const [text, setText] = useState('')
   const [drafts, setDrafts] = useState<Draft[] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -103,6 +106,7 @@ export function SongImport({ onImported }: Props) {
       notify(`${created.length}곡을 등록했어요.`, 'success')
       setText('')
       setDrafts(null)
+      onClose() // 다 끝났으니 접기
       onImported()
     } catch (err) {
       notify(err instanceof Error ? err.message : '등록하지 못했어요.')
@@ -111,9 +115,23 @@ export function SongImport({ onImported }: Props) {
     }
   }
 
+  // 결과 알림은 접혀 있어도 보여야 해서 (등록 성공 후 바로 접히니까) 따로 빼 둠
+  const toastView = toast && (
+    <Toast key={toast.id} message={toast.message} kind={toast.kind} onDone={() => setToast(null)} />
+  )
+
+  if (!open) return toastView
+
   return (
     <div className="import">
-      <h3 className="import-head">곡 등록</h3>
+      <div className="import-top">
+        <h3 className="import-head">곡 등록</h3>
+        <button type="button" className="import-close" onClick={onClose} aria-label="곡 등록 닫기">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
       <p className="import-hint">
         아래 양식과 같이, 엔트리 결과를 그대로 붙여 넣으세요.
       </p>
@@ -244,9 +262,7 @@ export function SongImport({ onImported }: Props) {
         </>
       )}
 
-      {toast && (
-        <Toast key={toast.id} message={toast.message} kind={toast.kind} onDone={() => setToast(null)} />
-      )}
+      {toastView}
     </div>
   )
 }

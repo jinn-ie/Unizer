@@ -48,6 +48,29 @@ class SongMember(Base):
     song: Mapped["Song"] = relationship()
     member: Mapped["Member"] = relationship()
 
+# 공연 (예: "2026 버스킹") = 곡 묶음. 한 곡이 여러 공연에 들어갈 수 있음
+class Show(Base):
+    __tablename__ = "shows"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_kst)
+
+    # 공연을 지우면 연결 줄도 같이 지워짐 (곡 자체는 그대로)
+    links: Mapped[list["ShowSong"]] = relationship(cascade="all, delete-orphan")
+
+    @property
+    def song_ids(self) -> list[int]:
+        """화면에 보낼 곡 번호 목록"""
+        return [link.song_id for link in self.links]
+    
+# 공연 ↔ 곡 연결 한 줄
+class ShowSong(Base):
+    __tablename__ = "show_songs"
+
+    # 두 칸 모두 primary_key → 같은 공연에 같은 곡이 두 번 들어갈 수 없음
+    show_id: Mapped[int] = mapped_column(ForeignKey("shows.id", ondelete="CASCADE"), primary_key=True)
+    song_id: Mapped[int] = mapped_column(ForeignKey("songs.id"), primary_key=True)
 
 # 시간표 (예: "2026 버스킹 2차곡" 11/02 ~ 11/29)
 class Timetable(Base):

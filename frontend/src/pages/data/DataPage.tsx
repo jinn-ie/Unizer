@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { fetchMembers, fetchReservations, fetchSongMembers, fetchSongs, fetchTimetables } from '../../api'
-import type { Member, Reservation, Song, SongMember, Timetable } from '../../types'
+import { fetchMembers, fetchReservations, fetchShows, fetchSongMembers, fetchSongs, fetchTimetables } from '../../api'
+import type { Member, Reservation, Show, Song, SongMember, Timetable } from '../../types'
 import { parseDateKey, parseLocal, toDateKey } from '../../lib/date'
 import { Toast } from '../../components/Toast'
+import { ShowCreate } from './ShowCreate'
+import { ShowSheet } from './ShowSheet'
 import { SongImport } from './SongImport'
 import { TimetableBuilder } from './TimetableBuilder'
 import './DataPage.css'
@@ -17,6 +19,7 @@ type LoadState =
       songMembers: SongMember[]
       reservations: Reservation[]
       timetables: Timetable[]
+      shows: Show[] | null // null = 공연 목록을 못 불러옴 → 공연 구분 없이 곡만 보여줌
       loadedAt: number // 불러온 시각 (이후에 끝나는 연습 = 예정된 연습)
     }
 
@@ -40,9 +43,23 @@ function timetableStatus(t: Timetable, today: string): { label: string; cls: str
   return { label: '진행 중', cls: 'is-now' }
 }
 
-// 곡 탭: 곡 칩(누르면 인원·예정 연습·멤버) + 그 아래 곡 등록 / 시간표 목록 · 생성 / 부원 탭: 기수별 부원
+// 공연 토글 하나 (또는 맨 아래 "미분류")
+interface SongGroup {
+  key: string // "show-3" / "none"
+  name: string
+  show: Show | null // 미분류면 null
+}
+
+// 곡 탭: [곡 등록 | 공연 만들기] 버튼 + 공연별 토글 안에 곡 칩(누르면 인원·예정 연습·멤버) / 시간표 목록 · 생성
+// 부원 탭: 기수별 부원
 export function DataPage({ view }: Props) {
-  const [openId, setOpenId] = useState<number | null>(null) // 펼친 곡 (한 번에 하나, 기본은 접힘)
+  // 펼친 곡 칩 (한 번에 하나). 한 곡이 여러 공연에 있을 수 있어서 "토글 키:곡 번호"로 구분
+  const [openSongKey, setOpenSongKey] = useState<string | null>(null)
+  // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 맨 위 하나만 펼침
+  const [toggled, setToggled] = useState<Record<string, boolean>>({})
+  const [editingShow, setEditingShow] = useState<Show | null>(null) // 곡 넣기 · 편집 시트
+  // 곡 탭 맨 위 두 버튼 중 펼친 것 (한 번에 하나만)
+  const [panel, setPanel] = useState<'import' | 'show' | null>(null)
   const [builder, setBuilder] = useState<Builder | null>(null) // 시간표 창
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
@@ -57,8 +74,10 @@ export function DataPage({ view }: Props) {
       // 예정 연습 수는 부가 정보라, 실패해도 빈 목록으로 두고 곡 목록은 그대로 보여줌
       fetchReservations(controller.signal).catch(() => [] as Reservation[]),
       fetchTimetables(controller.signal).catch(() => [] as Timetable[]),
+      // 공연도 부가 정보: 실패하면 null 로 두고 예전처럼 곡만 보여줌
+      fetchShows(controller.signal).catch(() => null),
     ])
-      .then(([members, songs, songMembers, reservations, timetables]) =>
+      .then(([members, songs, songMembers, reservations, timetables, shows]) =>
         setLoad({
           status: 'ready',
           members,
@@ -66,6 +85,7 @@ export function DataPage({ view }: Props) {
           songMembers,
           reservations,
           timetables,
+          shows,
           loadedAt: Date.now(),
         }),
       )
@@ -112,18 +132,30 @@ export function DataPage({ view }: Props) {
     })
   }, [load])
 
-  // 시간표 목록: 들어간 곡 이름(곡 목록 순서) + 일정 이름(기본기 등) + 오늘 기준 상태
+  // 공연 토글 목록: 최근에 만든 공연이 위, 어느 공연에도 없는 곡은 맨 아래 "미분류"
+  // 토글 안의 곡 순서는 곡 목록 순서 그대로
+  const groups = useMemo(() => {
+    if (load.status !== 'ready' || load.shows === null) return null
+    const shows = [...load.shows].sort((a, b) => b.id - a.id) // 번호가 클수록 최근에 만든 공연
+    const inShow = new Set(shows.flatMap((s) => s.song_ids))
+    const list: (SongGroup & { songs: typeof songs })[] = shows.map((show) => {
+      const ids = new Set(show.song_ids)
+      return { key: `show-${show.id}`, name: show.name, show, songs: songs.filter((s) => ids.has(s.id)) }
+    })
+    const rest = songs.filter((s) => !inShow.has(s.id))
+    if (rest.length > 0) list.push({ key: 'none', name: '미분류', show: null, songs: rest })
+    return list
+  }, [load, songs])
+
+  // 시간표 목록: 들어간 곡 수 + 오늘 기준 상태
   const timetables = useMemo(() => {
     if (load.status !== 'ready') return []
     const today = toDateKey(new Date(load.loadedAt))
     return load.timetables.map((t) => {
       const ids = new Set(t.slots.map((s) => s.song_id))
-      const songTitles = load.songs.filter((s) => ids.has(s.id)).map((s) => s.title)
-      const extras = [...new Set(t.slots.flatMap((s) => (s.title ? [s.title] : [])))]
       return {
         ...t,
-        songCount: songTitles.length,
-        names: [...songTitles, ...extras],
+        songCount: load.songs.filter((s) => ids.has(s.id)).length, // 같은 곡 블록이 여러 개여도 1곡
         status: timetableStatus(t, today),
       }
     })
@@ -154,6 +186,60 @@ export function DataPage({ view }: Props) {
     )
   }
 
+  // 곡 칩 목록 (누르면 바로 아래에 인원 · 예정 연습 · 멤버)
+  function renderChips(groupKey: string, list: typeof songs) {
+    return (
+      <div className="song-chips">
+        {list.map((song) => {
+          const key = `${groupKey}:${song.id}`
+          const open = openSongKey === key
+          return (
+            <Fragment key={song.id}>
+              <button
+                type="button"
+                className={`song-chip${open ? ' is-open' : ''}`}
+                aria-expanded={open}
+                onClick={() => setOpenSongKey(open ? null : key)}
+              >
+                {song.title}
+              </button>
+
+              {open && (
+                <div className="song-detail">
+                  <div className="song-meta">
+                    <span className="song-count">{song.people.length}명</span>
+                    {/* 연습이 잡혀 있을 때만 횟수를 보여줌 (없을 때는 따로 표시하지 않음) */}
+                    {song.upcoming > 0 && <span className="song-times">예정된 연습 {song.upcoming}회</span>}
+                  </div>
+                  <ul className="name-list">
+                    {song.people.map((p) => (
+                      <li key={p.id} className={p.leader ? 'is-leader' : undefined}>
+                        {p.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const reload = () => setReloadKey((k) => k + 1)
+
+  // 방금 만들거나 저장한 공연은 펼쳐서 보여줌
+  const openShow = (id: number) => setToggled((t) => ({ ...t, [`show-${id}`]: true }))
+
+  // 맨 위 버튼: 누르면 펼치고, 이미 펼쳐져 있으면 접기
+  const togglePanel = (next: 'import' | 'show') => setPanel((cur) => (cur === next ? null : next))
+  const plusIcon = (
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
+      <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  )
+
   return (
     <main className="data">
       {view === 'members' && (
@@ -182,64 +268,99 @@ export function DataPage({ view }: Props) {
               <i /> 리더
             </em>
           </h2>
-          <div className="song-chips">
-            {songs.map((song) => {
-              const open = openId === song.id
-              const noPractice = song.upcoming === 0
-              return (
-                <Fragment key={song.id}>
-                  <button
-                    type="button"
-                    className={`song-chip${open ? ' is-open' : ''}`}
-                    aria-expanded={open}
-                    onClick={() => setOpenId(open ? null : song.id)}
-                  >
-                    {song.title}
-                    {noPractice && (
-                      <svg
-                        className="song-clock"
-                        viewBox="0 0 24 24"
-                        width="15"
-                        height="15"
-                        aria-label="예정된 연습 없음"
-                      >
-                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.2" />
-                        <path
-                          d="M12 7.5V12l3 2"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </button>
 
-                  {open && (
-                    <div className="song-detail">
-                      <div className="song-meta">
-                        <span className="song-count">{song.people.length}명</span>
-                        <span className={`song-times${noPractice ? ' is-empty' : ''}`}>
-                          {noPractice ? '예정된 연습 없음' : `예정된 연습 ${song.upcoming}회`}
-                        </span>
-                      </div>
-                      <ul className="name-list">
-                        {song.people.map((p) => (
-                          <li key={p.id} className={p.leader ? 'is-leader' : undefined}>
-                            {p.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </Fragment>
-              )
-            })}
+          {/* 맨 위: [곡 등록 | 공연 만들기] 반씩 한 줄. 누른 쪽 입력칸이 바로 아래에 펼쳐짐 */}
+          <div className="song-tools">
+            <button
+              type="button"
+              className={`tt-open-btn${panel === 'import' ? ' is-active' : ''}`}
+              aria-expanded={panel === 'import'}
+              onClick={() => togglePanel('import')}
+            >
+              {plusIcon}
+              곡 등록
+            </button>
+            <button
+              type="button"
+              className={`tt-open-btn${panel === 'show' ? ' is-active' : ''}`}
+              aria-expanded={panel === 'show'}
+              onClick={() => togglePanel('show')}
+              disabled={groups === null} // 공연 목록을 못 불러왔으면 만들 수도 없음
+            >
+              {plusIcon}
+              공연 만들기
+            </button>
           </div>
 
-          {/* 곡 목록 바로 아래: 붙여넣기로 곡 등록 */}
-          <SongImport onImported={() => setReloadKey((k) => k + 1)} />
+          <SongImport open={panel === 'import'} onClose={() => setPanel(null)} onImported={reload} />
+          {groups && (
+            <ShowCreate
+              open={panel === 'show'}
+              onClose={() => setPanel(null)}
+              names={groups.flatMap((g) => (g.show ? [g.show.name] : []))}
+              onCreated={(created) => {
+                openShow(created.id)
+                reload()
+                setToast({ id: Date.now(), message: `'${created.name}' 공연을 만들었어요.` })
+              }}
+            />
+          )}
+          {groups === null ? (
+            // 공연 목록을 못 불러왔을 때: 예전처럼 곡만
+            <>
+              <p className="show-unavailable">공연 목록을 불러오지 못해서 곡만 보여드려요.</p>
+              {renderChips('all', songs)}
+            </>
+          ) : (
+            <div className="show-groups">
+              {groups.map((group, i) => {
+                const open = toggled[group.key] ?? i === 0 // 직접 연 적 없으면 맨 위 하나만 펼침
+                const show = group.show
+                return (
+                  <div key={group.key} className={`show-group${open ? ' is-open' : ''}`}>
+                    {/* 제목 줄: [▶ 공연 이름 N곡] ……… [곡 넣기 · 편집]
+                        버튼 안에 버튼을 넣을 수 없어서, 펼치기 버튼과 편집 버튼을 나란히 둠 */}
+                    <div className="show-head">
+                      <button
+                        type="button"
+                        className="show-toggle"
+                        aria-expanded={open}
+                        onClick={() => setToggled((t) => ({ ...t, [group.key]: !open }))}
+                      >
+                        <svg className="show-toggle-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path
+                            d="M6 9l6 6 6-6"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <strong className={show ? undefined : 'is-none'}>{group.name}</strong>
+                        <span className="show-toggle-count">{group.songs.length}곡</span>
+                      </button>
+                      {show && (
+                        <button type="button" className="show-edit-btn" onClick={() => setEditingShow(show)}>
+                          곡 넣기 · 편집
+                        </button>
+                      )}
+                    </div>
+
+                    {open && (
+                      <div className="show-body">
+                        {group.songs.length > 0 ? (
+                          renderChips(group.key, group.songs)
+                        ) : (
+                          <p className="show-empty">아직 곡이 없어요. 오른쪽 위 버튼으로 곡을 넣어 주세요.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </section>
       )}
 
@@ -260,7 +381,6 @@ export function DataPage({ view }: Props) {
                     <span className="tt-card-period">
                       {shortDate(t.starts_on)} – {shortDate(t.ends_on)} · {t.songCount}곡
                     </span>
-                    <span className="tt-card-songs">{t.names.join(' · ')}</span>
                   </button>
                 </li>
               ))}
@@ -305,6 +425,26 @@ export function DataPage({ view }: Props) {
             setBuilder(null)
             setReloadKey((k) => k + 1)
             setToast({ id: Date.now(), message: `'${name}' 시간표를 삭제했어요.` })
+          }}
+        />
+      )}
+
+      {editingShow && load.shows && (
+        <ShowSheet
+          show={editingShow}
+          shows={load.shows}
+          songs={load.songs}
+          onClose={() => setEditingShow(null)}
+          onSaved={(saved) => {
+            setEditingShow(null)
+            openShow(saved.id)
+            reload()
+            setToast({ id: Date.now(), message: `'${saved.name}' 공연을 저장했어요.` })
+          }}
+          onDeleted={(name) => {
+            setEditingShow(null)
+            reload()
+            setToast({ id: Date.now(), message: `'${name}' 공연을 삭제했어요.` })
           }}
         />
       )}
