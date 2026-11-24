@@ -10,6 +10,8 @@ import type {
   PreviewSong,
   Reservation,
   ReservationInput,
+  Show,
+  ShowInput,
   Song,
   SongMember,
   Timetable,
@@ -99,6 +101,26 @@ export function updateTimetable(id: number, input: TimetableInput) {
 // 삭제: 그 시간표로 만든 연습도 전부 지움 (지난 날짜 포함)
 export function deleteTimetable(id: number) {
   return sendJson<void>(`/api/timetables/${id}`, 'DELETE')
+}
+
+// ── 공연 (곡 묶음) ──
+export function fetchShows(signal?: AbortSignal) {
+  return getJson<Show[]>('/api/shows', signal)
+}
+
+// 만들기: 처음엔 보통 곡 없이 이름만 (song_ids: [])
+export function createShow(input: ShowInput) {
+  return sendJson<Show>('/api/shows', 'POST', input)
+}
+
+// 수정: 이름 + 곡 목록을 통째로 바꿈 (체크를 푼 곡은 공연에서 빠짐)
+export function updateShow(id: number, input: ShowInput) {
+  return sendJson<Show>(`/api/shows/${id}`, 'PUT', input)
+}
+
+// 삭제: 공연만 지우고 곡은 그대로 남음
+export function deleteShow(id: number) {
+  return sendJson<void>(`/api/shows/${id}`, 'DELETE')
 }
 
 // ── 날짜별 메모 ──

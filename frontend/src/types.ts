@@ -115,6 +115,21 @@ export interface TimetableInput {
   slots: TimetableSlotInput[]
 }
 
+// 공연 (백엔드 schemas.py 에 만들 ShowRead 와 같은 모양)
+// 곡 묶음이에요. 한 곡이 여러 공연에 들어갈 수 있어요.
+export interface Show {
+  id: number
+  name: string // "2026 버스킹"
+  created_at: string
+  song_ids: number[] // 이 공연에 넣은 곡 번호들
+}
+
+// 공연 만들기 / 수정 때 보내는 값 (ShowIn). 곡 목록은 통째로 보내서 그대로 저장
+export interface ShowInput {
+  name: string
+  song_ids: number[]
+}
+
 // 날짜별 메모 (백엔드 schemas.py 의 NoteRead 와 같은 모양)
 export interface Note {
   id: number
