@@ -56,7 +56,8 @@ def generate(db: Session, tt: Timetable, slot: TimetableSlot) -> int:
                     e.status_code,
                     f"{slot.name} {day:%m/%d}({WEEKDAY_NAMES[slot.weekday]}) · {e.detail}",
                 )
-            db.add(Reservation(**item.model_dump(), slot_id=slot.id))
+            # member_ids 는 테이블 컬럼이 아니라서 뺌 (시간표로 만든 연습은 항상 단체)
+            db.add(Reservation(**item.model_dump(exclude={"member_ids"}), slot_id=slot.id))
             count += 1
         day += timedelta(days=1)
     return count
