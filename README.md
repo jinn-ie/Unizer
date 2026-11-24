@@ -98,7 +98,7 @@ frontend/
 | **부원** — 기수별 부원 목록 | 부원 | `pages/data/DataPage.tsx` | `routers/members.py`<br>`seed.py`, `data/members.csv` | `members` | jinn-ie |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
 | **로그인** — 기수·이름(+ 숫자 4자리 비밀번호)으로 로그인, 로그인 상태 확인 | 상단 로그인 | `pages/auth/` | `routers/auth.py`, `member_password.py` | `members.password_hash`<br>`login_sessions` | |
-| **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경, 내 일정(지금은 빈 시간표) | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`, `MyTimetable`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |
+| **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경, 내 정규 일정(지금은 빈 시간표) | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`, `MyTimetable`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |
 
 새 기능을 만들면 이 표에 한 줄 추가해 주세요.
 
@@ -106,7 +106,7 @@ frontend/
 
 등록된 기수와 이름으로 로그인해요. 비밀번호는 `members.password_hash`에 해시로 저장하고, 값이 비어 있으면(`NULL`) 기수와 이름만으로 로그인해요. 비밀번호는 **숫자 4자리**로 정해져 있고, 비밀번호가 있는 부원은 로그인할 때 비밀번호도 입력해요. 기수와 이름만으로 로그인하는 계정은 명단을 아는 사람도 사용할 수 있어요. 로그인 상태는 브라우저에서 7일간 유지되며, 기존 화면은 로그인 없이 이용할 수 있어요.
 
-로그인하면 상단 버튼이 사람 아이콘 + **ㅇㅇㅇ님**으로 바뀌고, 누르면 **마이페이지**로 들어가요. 마이페이지에서 비밀번호를 직접 설정하거나 바꿀 수 있어요. 그 아래 **내 일정**은 지금은 빈 주간 시간표이고, 시간 범위는 '연습 공간'과 같아요. (`lib/schedule.ts`의 `CAL_…` 값을 같이 써요.)
+로그인하면 상단 버튼이 사람 아이콘 + **ㅇㅇㅇ님**으로 바뀌고, 누르면 **마이페이지**로 들어가요. 마이페이지에서 비밀번호를 직접 설정하거나 바꿀 수 있어요. 그 아래 **내 정규 일정**(학교 수업, 알바처럼 매주 반복되는 일정)은 지금은 빈 주간 시간표이고, 시간 범위는 '연습 공간'과 같아요. (`lib/schedule.ts`의 `CAL_…` 값을 같이 써요.)
 
 - 비밀번호가 없으면 새 비밀번호만 입력해 바로 설정해요. 그래서 먼저 로그인한 다른 사람이 대신 설정할 수도 있어요. 그런 일이 생기면 운영자가 아래 `--clear` 명령으로 풀어 줘요.
 - 비밀번호가 있으면 현재 비밀번호가 맞아야 바꿀 수 있어요.

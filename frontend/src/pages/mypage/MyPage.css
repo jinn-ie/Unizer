@@ -70,7 +70,7 @@
   font-size: 13px;
 }
 
-/* 내 일정: 카드 없이 제목 + 시간표 */
+/* 내 정규 일정: 카드 없이 제목 + 설명 + 시간표 */
 .mypage-sec {
   margin-top: 28px;
 }
@@ -84,6 +84,7 @@
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.5; /* 설명이 두 줄이라 줄 사이를 조금 띄움 */
 }
 
 /* ── 비밀번호 설정 · 변경 (PasswordForm) ── */
