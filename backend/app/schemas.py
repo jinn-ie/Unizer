@@ -157,6 +157,21 @@ class TimetableRead(BaseModel):
     updated_at: datetime | None
     slots: list[SlotRead]
 
+# ── 공연 (곡 묶음) ──
+class ShowIn(BaseModel):
+    """공연 만들기 · 수정 때 받는 모양. song_ids 는 통째로 받아서 그대로 저장"""
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=100)
+    song_ids: list[int] = []      # 만들 때는 보통 빈 목록
+
+class ShowRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    created_at: datetime
+    song_ids: list[int]           # 모델의 @property 에서 읽어옴
 
 # ── 로그인 ──
 class LoginIn(BaseModel):
