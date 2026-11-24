@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { loginMember, logoutMember } from '../../api'
+import { loginMember } from '../../api'
 import type { Member } from '../../types'
+import { onlyPin, PIN_LENGTH } from '../../lib/pin'
 import './LoginPage.css'
 
 interface LoginPageProps {
   visible: boolean
-  member: Member | null
   status: 'loading' | 'ready' | 'error'
-  onMemberChange: (member: Member | null) => void
+  onLogin: (member: Member) => void
   onRetry: () => void
 }
 
-export function LoginPage({ visible, member, status, onMemberChange, onRetry }: LoginPageProps) {
+// 로그인하지 않았을 때 사람 버튼을 누르면 나오는 화면이에요. (로그인한 뒤에는 마이페이지)
+export function LoginPage({ visible, status, onLogin, onRetry }: LoginPageProps) {
   const [gen, setGen] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -31,23 +32,9 @@ export function LoginPage({ visible, member, status, onMemberChange, onRetry }: 
         password: password || undefined,
       })
       setPassword('')
-      onMemberChange(currentMember)
+      onLogin(currentMember)
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인하지 못했어요.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function submitLogout() {
-    if (busy) return
-    setError('')
-    setBusy(true)
-    try {
-      await logoutMember()
-      onMemberChange(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '로그아웃하지 못했어요.')
     } finally {
       setBusy(false)
     }
@@ -56,7 +43,7 @@ export function LoginPage({ visible, member, status, onMemberChange, onRetry }: 
   return (
     <main className="data" hidden={!visible}>
       <section className="login-card">
-        <h2>{member ? '내 계정' : '로그인'}</h2>
+        <h2>로그인</h2>
         {status === 'loading' && <p role="status">로그인 상태를 확인하고 있어요.</p>}
         {status === 'error' && (
           <>
@@ -64,14 +51,7 @@ export function LoginPage({ visible, member, status, onMemberChange, onRetry }: 
             <button type="button" className="import-btn" onClick={onRetry}>다시 시도</button>
           </>
         )}
-        {status === 'ready' && (member ? (
-          <>
-            <p role="status">{member.gen}기 {member.name}님으로 로그인했어요.</p>
-            <button type="button" className="import-btn" onClick={submitLogout} disabled={busy}>
-              {busy ? '로그아웃 중…' : '로그아웃'}
-            </button>
-          </>
-        ) : (
+        {status === 'ready' && (
           <form className="login-form" onSubmit={submitLogin}>
             <label>
               기수
@@ -89,18 +69,19 @@ export function LoginPage({ visible, member, status, onMemberChange, onRetry }: 
             </label>
             <label>
               비밀번호 <span>(선택)</span>
+              {/* 숫자 4자리만: 숫자 키패드가 뜨고, 숫자가 아닌 글자는 지워요. */}
               <input
-                type="password" autoComplete="current-password" maxLength={128}
-                aria-describedby="login-password-hint"
-                value={password} onChange={(event) => setPassword(event.target.value)}
+                type="password" inputMode="numeric" pattern="[0-9]{4}" maxLength={PIN_LENGTH}
+                autoComplete="current-password" aria-describedby="login-password-hint"
+                value={password} onChange={(event) => setPassword(onlyPin(event.target.value))}
               />
             </label>
-            <p id="login-password-hint">비밀번호가 설정된 계정만 입력해 주세요.</p>
+            <p id="login-password-hint">비밀번호를 설정한 부원만 숫자 4자리를 입력해 주세요.</p>
             <button type="submit" className="import-btn" disabled={busy || !gen || !name.trim()}>
               {busy ? '로그인 중…' : '로그인'}
             </button>
           </form>
-        ))}
+        )}
         {error && <p className="login-error" role="alert">{error}</p>}
       </section>
     </main>

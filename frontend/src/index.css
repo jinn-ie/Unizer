@@ -94,6 +94,11 @@ button {
   display: block;
 }
 
+/* 오른쪽 버튼(이름이 긴 부원)에 밀려 제목이 줄바꿈되지 않게 */
+.top-title {
+  flex-shrink: 0;
+}
+
 .top-title h1 {
   margin: 0;
   font-size: 24px;

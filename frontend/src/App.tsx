@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { fetchCurrentMember } from './api'
 import type { Member } from './types'
 import { LoginPage } from './pages/auth/LoginPage'
+import { MyPage } from './pages/mypage/MyPage'
+import { PersonIcon } from './components/PersonIcon'
 import { SchedulePage } from './pages/schedule/SchedulePage'
 import { DataPage } from './pages/data/DataPage'
 import { FeedbackPage } from './pages/feedback/FeedbackPage'
 
-type Tab = 'schedule' | 'songs' | 'members' | 'feedback' | 'login'
+// account: 상단 사람 버튼 (로그인 전에는 로그인 화면, 로그인 후에는 마이페이지)
+type Tab = 'schedule' | 'songs' | 'members' | 'feedback' | 'account'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'schedule', label: '연습 공간' },
@@ -50,11 +53,19 @@ export default function App() {
         </div>
         <button
           type="button"
-          className="login-entry"
-          aria-pressed={tab === 'login'}
-          onClick={() => setTab('login')}
+          className={`login-entry${member ? ' is-member' : ''}`}
+          aria-pressed={tab === 'account'}
+          aria-label={member ? `마이페이지 (${member.name}님)` : undefined}
+          onClick={() => setTab('account')}
         >
-          {member ? '내 계정' : '로그인'}
+          {member ? (
+            <>
+              <PersonIcon />
+              <span>{member.name}님</span>
+            </>
+          ) : (
+            '로그인'
+          )}
         </button>
       </header>
 
@@ -76,11 +87,12 @@ export default function App() {
       {tab === 'schedule' && <SchedulePage />}
       {(tab === 'songs' || tab === 'members') && <DataPage key={tab} view={tab} />}
       {tab === 'feedback' && <FeedbackPage />}
+      {tab === 'account' && member && <MyPage member={member} onLogout={() => setMember(null)} />}
+      {/* 로그인 화면은 다른 탭에 다녀와도 입력한 값이 남게 숨겨만 둬요. */}
       <LoginPage
-        visible={tab === 'login'}
-        member={member}
+        visible={tab === 'account' && !member}
         status={sessionStatus}
-        onMemberChange={setMember}
+        onLogin={setMember}
         onRetry={retrySession}
       />
     </div>

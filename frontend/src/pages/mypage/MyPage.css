@@ -1,0 +1,158 @@
+/* ── 마이페이지 ───────────────────────── */
+/* 바깥 스크롤은 공통 .data (index.css) 가 맡아요. */
+
+.mypage-card {
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.mypage-card + .mypage-card {
+  margin-top: 12px;
+}
+
+/* 내 정보: [아이콘] 이름님 / 기수 ............ [로그아웃] */
+.mypage-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mypage-avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--teal);
+  border-radius: 999px;
+  color: var(--teal);
+}
+
+.mypage-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mypage-who strong {
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-who span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mypage-logout {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mypage-logout:disabled {
+  color: var(--faint);
+}
+
+.mypage-error {
+  margin: 8px 0 0;
+  color: var(--red);
+  font-size: 13px;
+}
+
+/* 내 일정: 카드 없이 제목 + 시간표 */
+.mypage-sec {
+  margin-top: 28px;
+}
+
+.mypage-sec h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.mypage-sec p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── 비밀번호 설정 · 변경 (PasswordForm) ── */
+.password-box > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.password-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.password-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.password-badge {
+  padding: 3px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.password-badge.on {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+/* 흰 버튼(import-btn)보다 한 단계 약한 테두리 버튼 */
+.password-toggle {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.password-toggle:disabled {
+  color: var(--faint);
+}
+
+.password-box > .password-done {
+  color: var(--teal);
+}
+
+.password-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+  align-items: end;
+}
+
+/* 나란히 놓을 때는 import-btn 의 위 여백을 없애서 높이를 맞춰요. */
+.password-actions .import-btn {
+  margin-top: 0;
+  height: 44px;
+}
+
+/* 비밀번호 숫자는 넓게 띄워서 몇 자리 넣었는지 잘 보이게 */
+.password-box input[inputmode='numeric'] {
+  letter-spacing: 0.4em;
+}
