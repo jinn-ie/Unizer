@@ -17,7 +17,7 @@ const TOTAL_ROWS = (CAL_DAY_MIN - CAL_START_MIN) / CAL_SLOT_MIN
 /** 0시부터 min분 → 표 맨 위에서 몇 px */
 const toY = (min: number) => ((min - CAL_START_MIN) / CAL_SLOT_MIN) * ROW_PX
 
-// 마이페이지 '내 일정'의 주간 시간표예요. 지금은 빈 표만 보여줘요.
+// 마이페이지 '내 정규 일정'의 주간 시간표예요. 지금은 빈 표만 보여줘요.
 // 시간 범위는 '연습 공간'과 같아요: 08:00~24:00, 처음엔 16:00~24:00 이 보이게.
 export function MyTimetable() {
   const scrollRef = useRef<HTMLDivElement>(null)

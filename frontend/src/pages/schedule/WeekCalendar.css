@@ -169,6 +169,53 @@
   filter: brightness(1.15);
 }
 
+/* ── 한 칸 모드 ('내 연습'): 날짜마다 한 칸, 색으로 공간 구분 + 막대 안에 글자 ── */
+/* 모양은 시간표 만들기(TimetableBuilder)의 블록과 같게: 공간 색을 30%만 섞은 반투명 배경 + 왼쪽 색 띠 */
+/* 겹치는 연습이 있을 때만 --lanes 개로 나눠 나란히 (보통은 1 → 칸 전체 폭) */
+.cal.is-single .cal-block {
+  left: calc(100% / var(--lanes) * var(--lane) + 2px);
+  width: calc(100% / var(--lanes) - 4px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  padding: 3px 3px 2px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c) 30%, var(--surface-2));
+  border-left: 3px solid var(--c);
+  box-shadow: none;
+  overflow: hidden; /* 막대가 짧으면 넘치는 글자는 잘라냄 */
+  text-align: left;
+}
+
+/* 글자가 있는 큰 막대는 눌렀을 때 덜 커지게 */
+.cal.is-single .cal-block:active {
+  transform: scale(1.04);
+}
+
+/* 곡명: 흰 글씨, 최대 두 줄 */
+.cal-block-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--white);
+  word-break: break-all; /* 좁은 칸에서 긴 곡명도 줄바꿈 */
+}
+
+/* 공간 이름: 공간 색 글씨 (대회의실 1 · 2 는 색이 같아서 글자로 구분) */
+.cal-block-space {
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cal-now {
   position: absolute;
   left: -1px;

@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { TouchEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchNotes, fetchReservations } from '../../api'
 import type { Note, Reservation } from '../../types'
 import { SPACES } from '../../lib/spaces'
 import {
   addDays,
-  formatWeekRange,
   isSameDay,
   parseDateKey,
   startOfWeek,
   toDateKey,
 } from '../../lib/date'
 import { reservationToItem } from '../../lib/schedule'
+import { useWeekSwipe } from '../../lib/useWeekSwipe'
 import { WeekCalendar } from './WeekCalendar'
+import { WeekNav } from './WeekNav'
 import { DaySheet } from './DaySheet'
 import './SchedulePage.css'
 
@@ -83,19 +83,7 @@ export function SchedulePage() {
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
 
   // 좌우 스와이프로 주 이동
-  const touch = useRef<{ x: number; y: number } | null>(null)
-  const onTouchStart = (e: TouchEvent) => {
-    const t = e.touches[0]
-    touch.current = { x: t.clientX, y: t.clientY }
-  }
-  const onTouchEnd = (e: TouchEvent) => {
-    if (!touch.current) return
-    const t = e.changedTouches[0]
-    const dx = t.clientX - touch.current.x
-    const dy = t.clientY - touch.current.y
-    touch.current = null
-    if (Math.abs(dx) > 60 && Math.abs(dy) < 40) shiftWeek(dx < 0 ? 1 : -1)
-  }
+  const { onTouchStart, onTouchEnd } = useWeekSwipe(shiftWeek)
 
   return (
     <>
@@ -123,26 +111,12 @@ export function SchedulePage() {
         </ul>
       </aside>
 
-      <nav className="week-nav" aria-label="주 이동">
-        <button type="button" className="icon-btn" onClick={() => shiftWeek(-1)} aria-label="이전 주">
-          <Chevron dir="left" />
-        </button>
-        <div className="week-label">
-          <span className="week-year">{weekStart.getFullYear()}</span>
-          <strong>{formatWeekRange(weekStart)}</strong>
-        </div>
-        <button type="button" className="icon-btn" onClick={() => shiftWeek(1)} aria-label="다음 주">
-          <Chevron dir="right" />
-        </button>
-        <button
-          type="button"
-          className="today-btn"
-          onClick={() => setWeekStart(thisWeek)}
-          disabled={isThisWeek}
-        >
-          오늘
-        </button>
-      </nav>
+      <WeekNav
+        weekStart={weekStart}
+        isThisWeek={isThisWeek}
+        onShift={shiftWeek}
+        onToday={() => setWeekStart(thisWeek)}
+      />
 
       <ul className="legend" aria-label="공간 색상 (날짜 칸 안 왼쪽부터)">
         {SPACES.map((s) => (
@@ -210,20 +184,5 @@ export function SchedulePage() {
         />
       )}
     </>
-  )
-}
-
-function Chevron({ dir }: { dir: 'left' | 'right' }) {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <path
-        d={dir === 'left' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   )
 }

@@ -26,7 +26,9 @@ interface Segment {
   dayIndex: number
   startMin: number // 그 날 0시 기준 분
   endMin: number
-  lane: number
+  space: number // 공간 번호 (SPACES 순서) → 색
+  lane: number // 날짜 칸 안에서 몇 번째 세로줄인지 (0부터)
+  lanes: number // 세로줄이 몇 개로 나뉘는지
 }
 
 interface Props {
@@ -34,9 +36,43 @@ interface Props {
   items: ScheduleItem[]
   now: Date
   onSelectDay: (day: Date, focusKey?: string) => void
+  // spaces: 날짜 칸을 공간 4줄로 나눔 ('연습 공간', 기본값)
+  // single: 날짜마다 한 칸, 색으로 공간 구분 + 막대 안에 곡명 · 공간 ('내 연습')
+  layout?: 'spaces' | 'single'
 }
 
-export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
+/** 한 칸 모드: 겹치는 연습끼리만 칸을 나눠 나란히 놓음 (안 겹치면 칸 전체 폭) */
+function packColumns(segments: Segment[]): void {
+  for (let d = 0; d < 7; d++) {
+    const daySegs = segments.filter((s) => s.dayIndex === d).sort((a, b) => a.startMin - b.startMin)
+    let group: Segment[] = [] // 시간이 이어서 겹치는 연습 묶음
+    let colEnds: number[] = [] // 묶음 안에서 각 세로줄이 언제 비는지
+    let groupEnd = 0
+    const closeGroup = () => {
+      for (const s of group) s.lanes = colEnds.length
+      group = []
+      colEnds = []
+    }
+    for (const s of daySegs) {
+      if (group.length > 0 && s.startMin >= groupEnd) closeGroup() // 앞 묶음과 안 겹치면 새 묶음
+      // 이미 비어 있는 세로줄이 있으면 거기에, 없으면 새 줄
+      let col = colEnds.findIndex((end) => end <= s.startMin)
+      if (col === -1) {
+        col = colEnds.length
+        colEnds.push(s.endMin)
+      } else {
+        colEnds[col] = s.endMin
+      }
+      s.lane = col
+      group.push(s)
+      groupEnd = group.length === 1 ? s.endMin : Math.max(groupEnd, s.endMin)
+    }
+    closeGroup()
+  }
+}
+
+export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spaces' }: Props) {
+  const single = layout === 'single'
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart],
@@ -46,8 +82,8 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
   const segments = useMemo(() => {
     const out: Segment[] = []
     for (const item of items) {
-      const lane = SPACE_INDEX.get(item.space)
-      if (lane === undefined) continue
+      const space = SPACE_INDEX.get(item.space)
+      if (space === undefined) continue
       const start = item.start.getTime()
       const end = item.end.getTime()
       days.forEach((day, dayIndex) => {
@@ -61,12 +97,15 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
           dayIndex,
           startMin: (s - dayStart) / 60000,
           endMin: (e - dayStart) / 60000,
-          lane,
+          space,
+          lane: space, // 공간 4줄 모드: 공간 번호 = 세로줄
+          lanes: SPACES.length,
         })
       })
     }
+    if (single) packColumns(out)
     return out
-  }, [items, days])
+  }, [items, days, single])
 
   // 기본 08:00 부터. 그보다 이른 예약이 있는 주는 그 시각(정시)까지 확장
   const gridStartMin = useMemo(() => {
@@ -127,7 +166,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
   const nowMin = now.getHours() * 60 + now.getMinutes()
 
   return (
-    <div className="cal">
+    <div className={`cal${single ? ' is-single' : ''}`}>
       <div className="cal-head">
         <div className="cal-corner" />
         {days.map((d, i) => {
@@ -141,11 +180,14 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
             >
               <span className="cal-dow">{WEEKDAYS[i]}</span>
               <span className="cal-date">{d.getDate()}</span>
-              <span className="cal-lane-key" aria-hidden>
-                {SPACES.map((s) => (
-                  <i key={s.key} style={{ background: s.color }} />
-                ))}
-              </span>
+              {/* 공간 4줄 모드에서만: 날짜 아래 공간 색 줄 */}
+              {!single && (
+                <span className="cal-lane-key" aria-hidden>
+                  {SPACES.map((s) => (
+                    <i key={s.key} style={{ background: s.color }} />
+                  ))}
+                </span>
+              )}
             </button>
           )
         })}
@@ -180,10 +222,11 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
                 className={`cal-day${isToday ? ' is-today' : ''}`}
                 onClick={() => onSelectDay(d)}
               >
-                {/* 날짜 칸 양옆에 여백(--gut)을 두고, 그 안을 공간 4줄로 나눔 */}
-                {[1, 2, 3].map((n) => (
-                  <i key={n} className="cal-lane-line" style={{ '--lane': n } as CSSProperties} />
-                ))}
+                {/* 공간 4줄 모드: 날짜 칸 양옆에 여백(--gut)을 두고, 그 안을 공간 4줄로 나눔 */}
+                {!single &&
+                  [1, 2, 3].map((n) => (
+                    <i key={n} className="cal-lane-line" style={{ '--lane': n } as CSSProperties} />
+                  ))}
 
                 {segments
                   .filter((s) => s.dayIndex === i)
@@ -198,14 +241,23 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay }: Props) {
                           top: toY(s.startMin) + 1,
                           height: Math.max(toY(s.endMin) - toY(s.startMin) - 2, 4),
                           '--lane': s.lane,
-                          '--c': SPACES[s.lane].color,
+                          '--lanes': s.lanes,
+                          '--c': SPACES[s.space].color,
                         } as CSSProperties
                       }
                       onClick={(e) => {
                         e.stopPropagation()
                         onSelectDay(d, s.item.key)
                       }}
-                    />
+                    >
+                      {/* 한 칸 모드: 막대 안에 곡명 · 공간 (막대가 짧으면 공간 줄부터 잘림) */}
+                      {single && (
+                        <>
+                          <span className="cal-block-title">{s.item.title}</span>
+                          <span className="cal-block-space">{SPACES[s.space].label}</span>
+                        </>
+                      )}
+                    </button>
                   ))}
 
                 {isToday && nowMin >= gridStartMin && (

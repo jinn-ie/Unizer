@@ -23,10 +23,6 @@ type LoadState =
       loadedAt: number // 불러온 시각 (이후에 끝나는 연습 = 예정된 연습)
     }
 
-interface Props {
-  view: 'songs' | 'members' // 곡 탭 / 부원 탭
-}
-
 // 시간표 창: 새로 만들기 / 저장된 시간표 고치기
 type Builder = { mode: 'new' } | { mode: 'edit'; timetable: Timetable }
 
@@ -51,8 +47,8 @@ interface SongGroup {
 }
 
 // 곡 탭: [곡 등록 | 공연 만들기] 버튼 + 공연별 토글 안에 곡 칩(누르면 인원·예정 연습·멤버) / 시간표 목록 · 생성
-// 부원 탭: 기수별 부원
-export function DataPage({ view }: Props) {
+// (부원 목록은 곡 멤버 이름을 보여주는 데 써요)
+export function DataPage() {
   // 펼친 곡 칩 (한 번에 하나). 한 곡이 여러 공연에 있을 수 있어서 "토글 키:곡 번호"로 구분
   const [openSongKey, setOpenSongKey] = useState<string | null>(null)
   // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 맨 위 하나만 펼침
@@ -97,16 +93,6 @@ export function DataPage({ view }: Props) {
       })
     return () => controller.abort()
   }, [reloadKey])
-
-  // 기수별로 묶기 (오름차순)
-  const gens = useMemo(() => {
-    if (load.status !== 'ready') return []
-    const byGen = new Map<number, Member[]>()
-    for (const m of load.members) {
-      byGen.set(m.gen, [...(byGen.get(m.gen) ?? []), m])
-    }
-    return [...byGen.entries()].sort((a, b) => a[0] - b[0])
-  }, [load])
 
   // 곡별 참여자 (리더가 맨 앞) + 아직 끝나지 않은 연습 수
   const songs = useMemo(() => {
@@ -242,171 +228,149 @@ export function DataPage({ view }: Props) {
 
   return (
     <main className="data">
-      {view === 'members' && (
-        <section className="data-sec">
-          <h2>
-            부원 <span>{load.members.length}명</span>
-          </h2>
-          {gens.map(([gen, members]) => (
-            <div key={gen} className="data-group">
-              <h3>{gen}기</h3>
-              <ul className="name-list">
-                {members.map((m) => (
-                  <li key={m.id}>{m.name}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      )}
+      <section className="data-sec">
+        <h2>
+          곡 <span>{songs.length}곡</span>
+          <em className="leader-key">
+            <i /> 리더
+          </em>
+        </h2>
 
-      {view === 'songs' && (
-        <section className="data-sec">
-          <h2>
-            곡 <span>{songs.length}곡</span>
-            <em className="leader-key">
-              <i /> 리더
-            </em>
-          </h2>
-
-          {/* 맨 위: [곡 등록 | 공연 만들기] 반씩 한 줄. 누른 쪽 입력칸이 바로 아래에 펼쳐짐 */}
-          <div className="song-tools">
-            <button
-              type="button"
-              className={`tt-open-btn${panel === 'import' ? ' is-active' : ''}`}
-              aria-expanded={panel === 'import'}
-              onClick={() => togglePanel('import')}
-            >
-              {plusIcon}
-              곡 등록
-            </button>
-            <button
-              type="button"
-              className={`tt-open-btn${panel === 'show' ? ' is-active' : ''}`}
-              aria-expanded={panel === 'show'}
-              onClick={() => togglePanel('show')}
-              disabled={groups === null} // 공연 목록을 못 불러왔으면 만들 수도 없음
-            >
-              {plusIcon}
-              공연 만들기
-            </button>
-          </div>
-
-          <SongImport open={panel === 'import'} onClose={() => setPanel(null)} onImported={reload} />
-          {groups && (
-            <ShowCreate
-              open={panel === 'show'}
-              onClose={() => setPanel(null)}
-              names={groups.flatMap((g) => (g.show ? [g.show.name] : []))}
-              onCreated={(created) => {
-                openShow(created.id)
-                reload()
-                setToast({ id: Date.now(), message: `'${created.name}' 공연을 만들었어요.` })
-              }}
-            />
-          )}
-          {groups === null ? (
-            // 공연 목록을 못 불러왔을 때: 예전처럼 곡만
-            <>
-              <p className="show-unavailable">공연 목록을 불러오지 못해서 곡만 보여드려요.</p>
-              {renderChips('all', songs)}
-            </>
-          ) : (
-            <div className="show-groups">
-              {groups.map((group, i) => {
-                const open = toggled[group.key] ?? i === 0 // 직접 연 적 없으면 맨 위 하나만 펼침
-                const show = group.show
-                return (
-                  <div key={group.key} className={`show-group${open ? ' is-open' : ''}`}>
-                    {/* 제목 줄: [▶ 공연 이름 N곡] ……… [곡 넣기 · 편집]
-                        버튼 안에 버튼을 넣을 수 없어서, 펼치기 버튼과 편집 버튼을 나란히 둠 */}
-                    <div className="show-head">
-                      <button
-                        type="button"
-                        className="show-toggle"
-                        aria-expanded={open}
-                        onClick={() => setToggled((t) => ({ ...t, [group.key]: !open }))}
-                      >
-                        <svg className="show-toggle-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                          <path
-                            d="M6 9l6 6 6-6"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <strong className={show ? undefined : 'is-none'}>{group.name}</strong>
-                        <span className="show-toggle-count">{group.songs.length}곡</span>
-                      </button>
-                      {show && (
-                        <button type="button" className="show-edit-btn" onClick={() => setEditingShow(show)}>
-                          곡 넣기 · 편집
-                        </button>
-                      )}
-                    </div>
-
-                    {open && (
-                      <div className="show-body">
-                        {group.songs.length > 0 ? (
-                          renderChips(group.key, group.songs)
-                        ) : (
-                          <p className="show-empty">아직 곡이 없어요. 오른쪽 위 버튼으로 곡을 넣어 주세요.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {view === 'songs' && (
-        <section className="data-sec">
-          <h2>
-            시간표 <span>{timetables.length}개</span>
-          </h2>
-          {timetables.length > 0 && (
-            <ul className="tt-list">
-              {timetables.map((t) => (
-                <li key={t.id}>
-                  <button type="button" className="tt-card" onClick={() => setBuilder({ mode: 'edit', timetable: t })}>
-                    <span className="tt-card-top">
-                      <strong>{t.name}</strong>
-                      <em className={`tt-status ${t.status.cls}`}>{t.status.label}</em>
-                    </span>
-                    <span className="tt-card-period">
-                      {shortDate(t.starts_on)} – {shortDate(t.ends_on)} · {t.songCount}곡
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
+        {/* 맨 위: [곡 등록 | 공연 만들기] 반씩 한 줄. 누른 쪽 입력칸이 바로 아래에 펼쳐짐 */}
+        <div className="song-tools">
           <button
             type="button"
-            className="tt-open-btn"
-            onClick={() => setBuilder({ mode: 'new' })}
-            disabled={songs.length === 0}
+            className={`tt-open-btn${panel === 'import' ? ' is-active' : ''}`}
+            aria-expanded={panel === 'import'}
+            onClick={() => togglePanel('import')}
           >
-            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
-              <rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M3.5 10h17M9 5v15M8 3v3M16 3v3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            시간표 생성
+            {plusIcon}
+            곡 등록
           </button>
-        </section>
-      )}
+          <button
+            type="button"
+            className={`tt-open-btn${panel === 'show' ? ' is-active' : ''}`}
+            aria-expanded={panel === 'show'}
+            onClick={() => togglePanel('show')}
+            disabled={groups === null} // 공연 목록을 못 불러왔으면 만들 수도 없음
+          >
+            {plusIcon}
+            공연 만들기
+          </button>
+        </div>
+
+        <SongImport open={panel === 'import'} onClose={() => setPanel(null)} onImported={reload} />
+        {groups && (
+          <ShowCreate
+            open={panel === 'show'}
+            onClose={() => setPanel(null)}
+            names={groups.flatMap((g) => (g.show ? [g.show.name] : []))}
+            onCreated={(created) => {
+              openShow(created.id)
+              reload()
+              setToast({ id: Date.now(), message: `'${created.name}' 공연을 만들었어요.` })
+            }}
+          />
+        )}
+        {groups === null ? (
+          // 공연 목록을 못 불러왔을 때: 예전처럼 곡만
+          <>
+            <p className="show-unavailable">공연 목록을 불러오지 못해서 곡만 보여드려요.</p>
+            {renderChips('all', songs)}
+          </>
+        ) : (
+          <div className="show-groups">
+            {groups.map((group, i) => {
+              const open = toggled[group.key] ?? i === 0 // 직접 연 적 없으면 맨 위 하나만 펼침
+              const show = group.show
+              return (
+                <div key={group.key} className={`show-group${open ? ' is-open' : ''}`}>
+                  {/* 제목 줄: [▶ 공연 이름 N곡] ……… [곡 넣기 · 편집]
+                      버튼 안에 버튼을 넣을 수 없어서, 펼치기 버튼과 편집 버튼을 나란히 둠 */}
+                  <div className="show-head">
+                    <button
+                      type="button"
+                      className="show-toggle"
+                      aria-expanded={open}
+                      onClick={() => setToggled((t) => ({ ...t, [group.key]: !open }))}
+                    >
+                      <svg className="show-toggle-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                        <path
+                          d="M6 9l6 6 6-6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <strong className={show ? undefined : 'is-none'}>{group.name}</strong>
+                      <span className="show-toggle-count">{group.songs.length}곡</span>
+                    </button>
+                    {show && (
+                      <button type="button" className="show-edit-btn" onClick={() => setEditingShow(show)}>
+                        곡 넣기 · 편집
+                      </button>
+                    )}
+                  </div>
+
+                  {open && (
+                    <div className="show-body">
+                      {group.songs.length > 0 ? (
+                        renderChips(group.key, group.songs)
+                      ) : (
+                        <p className="show-empty">아직 곡이 없어요. 오른쪽 위 버튼으로 곡을 넣어 주세요.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="data-sec">
+        <h2>
+          시간표 <span>{timetables.length}개</span>
+        </h2>
+        {timetables.length > 0 && (
+          <ul className="tt-list">
+            {timetables.map((t) => (
+              <li key={t.id}>
+                <button type="button" className="tt-card" onClick={() => setBuilder({ mode: 'edit', timetable: t })}>
+                  <span className="tt-card-top">
+                    <strong>{t.name}</strong>
+                    <em className={`tt-status ${t.status.cls}`}>{t.status.label}</em>
+                  </span>
+                  <span className="tt-card-period">
+                    {shortDate(t.starts_on)} – {shortDate(t.ends_on)} · {t.songCount}곡
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          className="tt-open-btn"
+          onClick={() => setBuilder({ mode: 'new' })}
+          disabled={songs.length === 0}
+        >
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
+            <rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M3.5 10h17M9 5v15M8 3v3M16 3v3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          시간표 생성
+        </button>
+      </section>
 
       {builder && (
         <TimetableBuilder

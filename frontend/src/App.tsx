@@ -6,15 +6,16 @@ import { MyPage } from './pages/mypage/MyPage'
 import { PersonIcon } from './components/PersonIcon'
 import { SchedulePage } from './pages/schedule/SchedulePage'
 import { DataPage } from './pages/data/DataPage'
+import { MyPracticePage } from './pages/mypractice/MyPracticePage'
 import { FeedbackPage } from './pages/feedback/FeedbackPage'
 
 // account: 상단 사람 버튼 (로그인 전에는 로그인 화면, 로그인 후에는 마이페이지)
-type Tab = 'schedule' | 'songs' | 'members' | 'feedback' | 'account'
+type Tab = 'schedule' | 'songs' | 'mine' | 'feedback' | 'account'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'schedule', label: '연습 공간' },
   { key: 'songs', label: '곡' },
-  { key: 'members', label: '부원' },
+  { key: 'mine', label: '내 연습' },
   { key: 'feedback', label: '의견 보내기' },
 ]
 
@@ -85,7 +86,11 @@ export default function App() {
       </nav>
 
       {tab === 'schedule' && <SchedulePage />}
-      {(tab === 'songs' || tab === 'members') && <DataPage key={tab} view={tab} />}
+      {tab === 'songs' && <DataPage />}
+      {/* 다른 부원으로 로그인하면 처음부터 다시 불러오게 key 로 구분 */}
+      {tab === 'mine' && (
+        <MyPracticePage key={member?.id ?? 'guest'} member={member} onLogin={() => setTab('account')} />
+      )}
       {tab === 'feedback' && <FeedbackPage />}
       {tab === 'account' && member && <MyPage member={member} onLogout={() => setMember(null)} />}
       {/* 로그인 화면은 다른 탭에 다녀와도 입력한 값이 남게 숨겨만 둬요. */}

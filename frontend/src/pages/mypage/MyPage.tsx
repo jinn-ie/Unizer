@@ -12,7 +12,7 @@ interface MyPageProps {
 }
 
 // 상단의 사람 아이콘을 누르면 들어오는 마이페이지예요.
-// 위에서부터: 내 정보 · 로그아웃 → 비밀번호 설정/변경 → 내 일정
+// 위에서부터: 내 정보 · 로그아웃 → 비밀번호 설정/변경 → 내 정규 일정
 export function MyPage({ member, onLogout }: MyPageProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -52,8 +52,12 @@ export function MyPage({ member, onLogout }: MyPageProps) {
       </section>
 
       <section className="mypage-sec">
-        <h2>내 일정</h2>
-        <p>아직 등록된 일정이 없어요.</p>
+        <h2>내 정규 일정</h2>
+        <p>
+          학교 수업, 알바 등 매주 반복되는 일정을 표시해주세요.
+          <br />
+          유디 공식 일정은 표시하지 않아도 됩니다.
+        </p>
         <MyTimetable />
       </section>
     </main>

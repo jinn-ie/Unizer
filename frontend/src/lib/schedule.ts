@@ -2,7 +2,7 @@ import type { Reservation, ScheduleItem } from '../types'
 import { parseLocal } from './date'
 
 // ── 주간 시간표의 시간 범위 ──
-// '연습 공간' 캘린더와 마이페이지 '내 일정'이 같은 값을 써서 똑같은 범위를 보여줘요.
+// '연습 공간' 캘린더와 마이페이지 '내 정규 일정'이 같은 값을 써서 똑같은 범위를 보여줘요.
 export const CAL_SLOT_MIN = 30 // 한 칸 = 30분
 export const CAL_DAY_MIN = 24 * 60 // 표의 끝 24:00
 export const CAL_START_MIN = 8 * 60 // 위로 스크롤하면 08:00 까지 보임
