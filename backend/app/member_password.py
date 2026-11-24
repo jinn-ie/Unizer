@@ -1,5 +1,6 @@
 """운영자가 등록된 부원의 로그인 비밀번호를 설정하거나 해제해요."""
 
+import re
 import argparse
 from getpass import getpass
 
@@ -26,9 +27,10 @@ def main():
         if args.clear:
             member.password_hash = None
         else:
-            password = getpass("새 비밀번호 (8~128자): ")
-            if not 8 <= len(password) <= 128 or not password.strip():
-                parser.error("비밀번호는 8~128자로 입력해 주세요.")
+            password = getpass("새 비밀번호 (숫자 4자리): ")
+            # \d 는 다른 나라 숫자(١٢٣٤ 등)도 통과시켜서 [0-9] 로 검사해요.
+            if not re.fullmatch(r"[0-9]{4}", password):
+                parser.error("비밀번호는 숫자 4자리로 입력해 주세요.")
             if password != getpass("비밀번호 확인: "):
                 parser.error("두 비밀번호가 일치하지 않아요.")
             member.password_hash = hash_password(password)
