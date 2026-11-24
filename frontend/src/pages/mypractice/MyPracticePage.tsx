@@ -139,7 +139,9 @@ function MyPracticeCalendar({ member }: { member: Member }) {
       </ul>
 
       <main className="cal-wrap" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {/* 한 사람이 같은 시간에 두 곳에 있을 수 없으니, 날짜마다 한 칸 + 색으로 공간 구분 */}
         <WeekCalendar
+          layout="single"
           weekStart={weekStart}
           items={items}
           now={now}
