@@ -8,13 +8,16 @@ import {
   isSameDay,
   WEEKDAYS,
 } from '../../lib/date'
+import {
+  CAL_DAY_MIN as DAY_MIN,
+  CAL_DEFAULT_TOP_MIN as DEFAULT_TOP_MIN,
+  CAL_SLOT_MIN as SLOT_MIN,
+  CAL_START_MIN as BASE_START_MIN,
+  CAL_VISIBLE_ROWS as VISIBLE_ROWS,
+} from '../../lib/schedule'
 import './WeekCalendar.css'
 
-const SLOT_MIN = 30
-const DAY_MIN = 24 * 60
-const BASE_START_MIN = 8 * 60 // 위로 스크롤하면 08:00 까지 보임
-const DEFAULT_TOP_MIN = 16 * 60 // 처음 화면 맨 위에 보일 시각
-const VISIBLE_ROWS = (DAY_MIN - DEFAULT_TOP_MIN) / SLOT_MIN // 16:00~24:00 이 화면에 꽉 차도록
+// 시간 범위(08:00~24:00, 처음엔 16:00부터)는 lib/schedule.ts 에서 마이페이지와 같이 써요.
 const MIN_ROW_PX = 18
 const MAX_ROW_PX = 44
 
