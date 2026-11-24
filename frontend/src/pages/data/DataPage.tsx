@@ -321,37 +321,41 @@ export function DataPage({ view }: Props) {
                 const show = group.show
                 return (
                   <div key={group.key} className={`show-group${open ? ' is-open' : ''}`}>
-                    <button
-                      type="button"
-                      className="show-toggle"
-                      aria-expanded={open}
-                      onClick={() => setToggled((t) => ({ ...t, [group.key]: !open }))}
-                    >
-                      <strong className={show ? undefined : 'is-none'}>{group.name}</strong>
-                      <span className="show-toggle-count">{group.songs.length}곡</span>
-                      <svg className="show-toggle-arrow" viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-                        <path
-                          d="M6 9l6 6 6-6"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
+                    {/* 제목 줄: [▶ 공연 이름 N곡] ……… [곡 넣기 · 편집]
+                        버튼 안에 버튼을 넣을 수 없어서, 펼치기 버튼과 편집 버튼을 나란히 둠 */}
+                    <div className="show-head">
+                      <button
+                        type="button"
+                        className="show-toggle"
+                        aria-expanded={open}
+                        onClick={() => setToggled((t) => ({ ...t, [group.key]: !open }))}
+                      >
+                        <svg className="show-toggle-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+                          <path
+                            d="M6 9l6 6 6-6"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <strong className={show ? undefined : 'is-none'}>{group.name}</strong>
+                        <span className="show-toggle-count">{group.songs.length}곡</span>
+                      </button>
+                      {show && (
+                        <button type="button" className="show-edit-btn" onClick={() => setEditingShow(show)}>
+                          곡 넣기 · 편집
+                        </button>
+                      )}
+                    </div>
 
                     {open && (
                       <div className="show-body">
                         {group.songs.length > 0 ? (
                           renderChips(group.key, group.songs)
                         ) : (
-                          <p className="show-empty">아직 곡이 없어요</p>
-                        )}
-                        {show && (
-                          <button type="button" className="show-edit-btn" onClick={() => setEditingShow(show)}>
-                            {group.songs.length > 0 ? '곡 넣기 · 편집' : '+ 곡 넣기'}
-                          </button>
+                          <p className="show-empty">아직 곡이 없어요. 오른쪽 위 버튼으로 곡을 넣어 주세요.</p>
                         )}
                       </div>
                     )}
