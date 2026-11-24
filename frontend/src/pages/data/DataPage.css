@@ -366,11 +366,3 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
-
-.tt-card-songs {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--faint);
-}

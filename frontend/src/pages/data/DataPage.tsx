@@ -147,18 +147,15 @@ export function DataPage({ view }: Props) {
     return list
   }, [load, songs])
 
-  // 시간표 목록: 들어간 곡 이름(곡 목록 순서) + 일정 이름(기본기 등) + 오늘 기준 상태
+  // 시간표 목록: 들어간 곡 수 + 오늘 기준 상태
   const timetables = useMemo(() => {
     if (load.status !== 'ready') return []
     const today = toDateKey(new Date(load.loadedAt))
     return load.timetables.map((t) => {
       const ids = new Set(t.slots.map((s) => s.song_id))
-      const songTitles = load.songs.filter((s) => ids.has(s.id)).map((s) => s.title)
-      const extras = [...new Set(t.slots.flatMap((s) => (s.title ? [s.title] : [])))]
       return {
         ...t,
-        songCount: songTitles.length,
-        names: [...songTitles, ...extras],
+        songCount: load.songs.filter((s) => ids.has(s.id)).length, // 같은 곡 블록이 여러 개여도 1곡
         status: timetableStatus(t, today),
       }
     })
@@ -384,7 +381,6 @@ export function DataPage({ view }: Props) {
                     <span className="tt-card-period">
                       {shortDate(t.starts_on)} – {shortDate(t.ends_on)} · {t.songCount}곡
                     </span>
-                    <span className="tt-card-songs">{t.names.join(' · ')}</span>
                   </button>
                 </li>
               ))}
