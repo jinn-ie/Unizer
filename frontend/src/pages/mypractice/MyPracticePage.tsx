@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchNotes, fetchReservations, fetchSongMembers } from '../../api'
 import type { Member, Note, Reservation, SongMember } from '../../types'
 import { SPACES } from '../../lib/spaces'
-import { addDays, isSameDay, startOfWeek, toDateKey } from '../../lib/date'
+import { addDays, isSameDay, parseLocal, startOfWeek, toDateKey } from '../../lib/date'
 import { reservationToItem } from '../../lib/schedule'
 import { useWeekSwipe } from '../../lib/useWeekSwipe'
 import { WeekCalendar } from '../schedule/WeekCalendar'
@@ -21,7 +21,26 @@ type LoadState =
   | { status: 'error' }
   | { status: 'ready'; reservations: Reservation[]; songMembers: SongMember[]; notes: Note[] }
 
-// '내 연습' 탭: '연습 공간'과 같은 주별 시간표인데, 내가 멤버로 들어간 곡의 연습만 보여줘요.
+// ── 곡이 아닌 공통 일정 중 '내 연습'에 보여줄 것 ──
+const ALL_MEMBER_TITLES = ['의돌', '신돌'] // 전체 부원의 일정
+const TWO_GEN_TITLES = ['돌리기', '기본기'] // 그 해의 두 기수만의 일정 (연도 - 1984기, 연도 - 1983기)
+
+/** 공통 일정(title 로 잡힌 연습)이 이 기수의 부원에게 해당하는지 */
+function isMyCommonSchedule(r: Reservation, gen: number): boolean {
+  if (r.title === null) return false
+  const title = r.title.trim()
+  if (ALL_MEMBER_TITLES.includes(title)) return true
+  if (TWO_GEN_TITLES.includes(title)) {
+    // "당해 연도"는 그 연습이 있는 날짜의 연도 (2026년이면 42기 · 43기, 2027년이면 43기 · 44기)
+    const year = parseLocal(r.start_at).getFullYear()
+    return gen === year - 1984 || gen === year - 1983
+  }
+  return false // 사람 이름으로 된 일정 등 나머지는 일단 안 보여줌
+}
+
+// '내 연습' 탭: '연습 공간'과 같은 주별 시간표인데, 나에게 해당하는 연습만 보여줘요.
+//   - 내가 멤버로 들어간 곡의 연습
+//   - 공통 일정 중 나에게 해당하는 것 (위 isMyCommonSchedule)
 // 누가 "나"인지 알아야 해서 로그인한 뒤에만 볼 수 있어요.
 export function MyPracticePage({ member, onLogin }: Props) {
   if (!member) {
@@ -29,7 +48,7 @@ export function MyPracticePage({ member, onLogin }: Props) {
       <div className="mypractice-empty">
         <div className="error-card">
           <strong>로그인하면 내 연습을 볼 수 있어요</strong>
-          <p>내가 참여한 곡의 연습만 모아서 보여드려요.</p>
+          <p>내가 참여한 곡의 연습과 내 기수의 공통 일정을 모아서 보여드려요.</p>
           <button type="button" className="mypractice-login" onClick={onLogin}>
             로그인하기
           </button>
@@ -80,13 +99,15 @@ function MyPracticeCalendar({ member }: { member: Member }) {
     return new Set(load.songMembers.filter((sm) => sm.member_id === member.id).map((sm) => sm.song_id))
   }, [load, member.id])
 
-  // 그 곡들의 연습만 (기본기 같은 곡이 아닌 일정은 빼요)
+  // 내 곡의 연습 + 나에게 해당하는 공통 일정
   const items = useMemo(() => {
     if (load.status !== 'ready') return []
     return load.reservations
-      .filter((r) => r.song_id !== null && mySongIds.has(r.song_id))
+      .filter((r) =>
+        r.song_id !== null ? mySongIds.has(r.song_id) : isMyCommonSchedule(r, member.gen),
+      )
       .map(reservationToItem)
-  }, [load, mySongIds])
+  }, [load, mySongIds, member.gen])
 
   const weekCount = useMemo(() => {
     const s = weekStart.getTime()
@@ -149,12 +170,12 @@ function MyPracticeCalendar({ member }: { member: Member }) {
 
       {load.status === 'ready' && (
         <p className="week-summary">
-          {mySongIds.size === 0 ? (
-            '아직 참여한 곡이 없어요'
-          ) : weekCount > 0 ? (
+          {weekCount > 0 ? (
             <>
-              이 주의 내 연습 <b>{weekCount}건</b> · 내가 참여한 곡의 연습만 보여요
+              이 주의 내 연습 <b>{weekCount}건</b> · 내 곡과 내 기수 일정만 보여요
             </>
+          ) : mySongIds.size === 0 ? (
+            '아직 참여한 곡이 없어요'
           ) : (
             '이 주에는 내 연습이 없어요'
           )}
