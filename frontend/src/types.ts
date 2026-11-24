@@ -140,3 +140,15 @@ export interface LoginInput {
   name: string
   password?: string
 }
+
+// 로그인한 부원에게 비밀번호가 설정돼 있는지 (GET /api/auth/password)
+export interface PasswordStatus {
+  has_password: boolean
+}
+
+// 백엔드 schemas.py 의 PasswordChangeIn 과 같은 모양
+// 처음 설정할 때는 current_password 없이 보내요.
+export interface PasswordChangeInput {
+  current_password?: string
+  new_password: string
+}

@@ -28,6 +28,8 @@ class Member(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     gen: Mapped[int]
     name: Mapped[str] = mapped_column(String(30))
+    # 로그인 비밀번호 해시예요. None이면 비밀번호 없이 기수 + 이름으로 로그인해요.
+    password_hash: Mapped[str | None] = mapped_column(String(96), default=None)
 
 class Song(Base):
     __tablename__ = "songs"
@@ -135,13 +137,6 @@ class Feedback(Base):
 
 
 # ── 로그인 ──
-class MemberPassword(Base):
-    __tablename__ = "member_passwords"
-
-    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), primary_key=True)
-    password_hash: Mapped[str] = mapped_column(String(96))
-
-
 class LoginSession(Base):
     __tablename__ = "login_sessions"
 

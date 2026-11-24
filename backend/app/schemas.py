@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from app.models import Space
@@ -167,3 +168,15 @@ class LoginIn(BaseModel):
     @classmethod
     def strip_name(cls, value):
         return value.strip() if isinstance(value, str) else value
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: SecretStr | None = None  # 처음 설정할 때는 안 보내요
+    new_password: SecretStr
+
+    @field_validator("new_password")
+    @classmethod
+    def four_digits(cls, value: SecretStr) -> SecretStr:
+        if not re.fullmatch(r"[0-9]{4}", value.get_secret_value()):
+            raise ValueError("비밀번호는 숫자 4자리로 입력해 주세요.")
+        return value

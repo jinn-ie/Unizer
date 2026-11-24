@@ -5,6 +5,8 @@ import type {
   Member,
   Note,
   NoteInput,
+  PasswordChangeInput,
+  PasswordStatus,
   PreviewSong,
   Reservation,
   ReservationInput,
@@ -128,4 +130,13 @@ export function loginMember(input: LoginInput) {
 
 export function logoutMember() {
   return sendJson<void>('/api/auth/logout', 'POST')
+}
+
+export function fetchPasswordStatus(signal?: AbortSignal) {
+  return getJson<PasswordStatus>('/api/auth/password', signal)
+}
+
+// 설정 · 변경 둘 다 이 함수로 해요. 성공하면 다른 기기의 로그인이 풀려요.
+export function changePassword(input: PasswordChangeInput) {
+  return sendJson<void>('/api/auth/password', 'PUT', input)
 }

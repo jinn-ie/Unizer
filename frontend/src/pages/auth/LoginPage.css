@@ -7,6 +7,24 @@
   white-space: nowrap;
 }
 
+/* 로그인하면: [사람 아이콘] ㅇㅇㅇ님 (이름이 길면 … 으로 줄여요) */
+.login-entry.is-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0; /* 자리가 모자라면 버튼이 줄어들고 이름이 … 으로 줄어요. */
+  padding: 0 10px;
+}
+
+.login-entry.is-member span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.login-entry.is-member svg {
+  flex-shrink: 0;
+}
+
 .login-entry[aria-pressed='true'] {
   border-color: var(--teal);
   color: var(--teal);
@@ -53,4 +71,9 @@
 .login-card .login-error {
   margin-bottom: 0;
   color: var(--red);
+}
+
+/* .login-form input 의 display: block 이 hidden 을 덮어써서 다시 숨겨요. (마이페이지 비밀번호 칸) */
+.login-form input[hidden] {
+  display: none;
 }
