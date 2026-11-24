@@ -61,10 +61,18 @@ def move_passwords_to_members(conn) -> bool:
 
     return changed
 
+def add_reservation_personal(conn) -> bool:
+    """2026-11-24 reservations.personal 추가 (개인 보충 여부)"""
+    if has_column(conn, "reservations", "personal"):
+        return False                       # 이미 있음 → 건너뜀
+    # 이미 있던 연습은 전부 단체 → DEFAULT 0 (False) 으로 채움
+    conn.execute(text("ALTER TABLE reservations ADD COLUMN personal BOOLEAN NOT NULL DEFAULT 0"))
+    return True
 
 STEPS = [
     # add_reservation_memo,
     move_passwords_to_members,
+    add_reservation_personal,
 ]
 
 

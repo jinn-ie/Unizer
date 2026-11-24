@@ -135,12 +135,33 @@ class Reservation(Base):
     # 시간표 블록으로 만든 연습이면 그 블록 번호, 직접 잡은 연습이면 None
     # (블록을 지울 땐 BE 에서 연습을 먼저 지움. SET NULL 은 혹시 남은 연습이 고아가 되지 않게 하는 안전장치)
     slot_id: Mapped[int | None] = mapped_column(ForeignKey("timetable_slots.id", ondelete="SET NULL"))
+    personal: Mapped[bool] = mapped_column(default=False)      # 개인 보충이면 True (단체 연습은 False)    
     song: Mapped["Song | None"] = relationship(lazy="joined")
+
+    # 개인 보충에 함께하는 부원 (리더 포함). 연습을 지우면 같이 지워짐
+    # lazy="selectin": 연습 목록을 불러올 때 연결 줄을 한 번에 모아서 가져옴 (연습마다 따로 묻지 않게)
+    member_links: Mapped[list["ReservationMember"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
+    )
 
     @property
     def song_title(self) -> str | None:
         return self.song.title if self.song else None
 
+    @property
+    def member_ids(self) -> list[int]:
+        """화면에 보낼 함께하는 부원 번호 목록 (단체 연습이면 빈 목록)"""
+        return [link.member_id for link in self.member_links]
+
+# 개인 보충 ↔ 부원 연결 한 줄 (SongMember, ShowSong 과 같은 방식)
+class ReservationMember(Base):
+    __tablename__ = "reservation_members"
+
+    # 두 칸 모두 primary_key → 같은 연습에 같은 부원이 두 번 들어갈 수 없음
+    reservation_id: Mapped[int] = mapped_column(
+        ForeignKey("reservations.id", ondelete="CASCADE"), primary_key=True
+    )
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id"), primary_key=True)  
 
 # 날짜별 메모 (예약으로 담기 어려운 내용을 줄글로)
 class Note(Base):

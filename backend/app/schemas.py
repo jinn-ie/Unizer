@@ -11,6 +11,8 @@ class ReservationIn(BaseModel):
     space: Space
     start_at: datetime
     end_at: datetime
+    personal: bool = False          # 개인 보충이면 True (곡 연습일 때만)
+    member_ids: list[int] = []      # 개인 보충에 함께하는 부원. 단체면 빈 목록
 
 class ReservationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # SQLAlchemy 객체에서 값을 읽어올 수 있게
@@ -25,6 +27,8 @@ class ReservationRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None     # 마지막 수정 시각 (수정한 적 없으면 null)
     slot_id: int | None             # 시간표로 만든 연습이면 블록 번호
+    personal: bool                  # 개인 보충 여부
+    member_ids: list[int]           # 함께하는 부원 (리더 포함). 모델의 @property 에서 읽어옴
 
 class MemberRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
