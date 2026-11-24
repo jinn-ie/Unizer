@@ -95,7 +95,7 @@ frontend/
 |---|---|---|---|---|---|
 | **연습 공간** — 주간 캘린더, 연습 등록·수정·삭제, 날짜별 메모 | 연습 공간 | `pages/schedule/` | `routers/reservations.py`<br>`routers/notes.py`<br>`services/conflicts.py` | `reservations`<br>`notes` | jinn-ie |
 | **곡** — 곡 목록, 붙여넣기로 곡 등록, 시간표 등록·수정·삭제 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableBuilder`) | `routers/songs.py`<br>`routers/timetables.py`<br>`services/timetables.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`timetables`<br>`timetable_slots` | jinn-ie |
-| **부원** — 기수별 부원 목록 | 부원 | `pages/data/DataPage.tsx` | `routers/members.py`<br>`seed.py`, `data/members.csv` | `members` | jinn-ie |
+| **내 연습** — 내가 멤버인 곡의 연습만 주별 시간표로 (로그인 필요) | 내 연습 | `pages/mypractice/` (`MyPracticePage`)<br>`pages/schedule/` 의 `WeekCalendar`, `WeekNav`, `DaySheet` 를 같이 씀 | `routers/reservations.py`<br>`routers/songs.py` | `reservations`<br>`song_members` | |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
 | **로그인** — 기수·이름(+ 숫자 4자리 비밀번호)으로 로그인, 로그인 상태 확인 | 상단 로그인 | `pages/auth/` | `routers/auth.py`, `member_password.py` | `members.password_hash`<br>`login_sessions` | |
 | **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경, 내 정규 일정(지금은 빈 시간표) | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`, `MyTimetable`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |

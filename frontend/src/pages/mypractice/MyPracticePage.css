@@ -1,0 +1,21 @@
+/* ── 내 연습: 로그인 전 안내 (나머지 모양은 SchedulePage.css 를 같이 씀) ── */
+.app > .mypractice-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mypractice-empty {
+  display: grid;
+  place-items: center;
+  padding: 24px 0;
+}
+
+.mypractice-login {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 700;
+}
