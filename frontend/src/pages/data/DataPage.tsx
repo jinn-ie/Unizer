@@ -50,7 +50,7 @@ interface SongGroup {
   show: Show | null // 미분류면 null
 }
 
-// 곡 탭: 공연 만들기 버튼 + 공연별 토글 안에 곡 칩(누르면 인원·예정 연습·멤버) + 곡 등록 / 시간표 목록 · 생성
+// 곡 탭: [곡 등록 | 공연 만들기] 버튼 + 공연별 토글 안에 곡 칩(누르면 인원·예정 연습·멤버) / 시간표 목록 · 생성
 // 부원 탭: 기수별 부원
 export function DataPage({ view }: Props) {
   // 펼친 곡 칩 (한 번에 하나). 한 곡이 여러 공연에 있을 수 있어서 "토글 키:곡 번호"로 구분
@@ -58,8 +58,8 @@ export function DataPage({ view }: Props) {
   // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 맨 위 하나만 펼침
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const [editingShow, setEditingShow] = useState<Show | null>(null) // 곡 넣기 · 편집 시트
-  // 곡 탭 맨 위 버튼으로 펼친 입력칸
-  const [panel, setPanel] = useState<'show' | null>(null)
+  // 곡 탭 맨 위 두 버튼 중 펼친 것 (한 번에 하나만)
+  const [panel, setPanel] = useState<'import' | 'show' | null>(null)
   const [builder, setBuilder] = useState<Builder | null>(null) // 시간표 창
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
@@ -236,7 +236,7 @@ export function DataPage({ view }: Props) {
   const openShow = (id: number) => setToggled((t) => ({ ...t, [`show-${id}`]: true }))
 
   // 맨 위 버튼: 누르면 펼치고, 이미 펼쳐져 있으면 접기
-  const togglePanel = (next: 'show') => setPanel((cur) => (cur === next ? null : next))
+  const togglePanel = (next: 'import' | 'show') => setPanel((cur) => (cur === next ? null : next))
   const plusIcon = (
     <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
       <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
@@ -272,8 +272,17 @@ export function DataPage({ view }: Props) {
             </em>
           </h2>
 
-          {/* 맨 위: 공연 만들기 버튼. 누르면 입력칸이 바로 아래에 펼쳐짐 */}
+          {/* 맨 위: [곡 등록 | 공연 만들기] 반씩 한 줄. 누른 쪽 입력칸이 바로 아래에 펼쳐짐 */}
           <div className="song-tools">
+            <button
+              type="button"
+              className={`tt-open-btn${panel === 'import' ? ' is-active' : ''}`}
+              aria-expanded={panel === 'import'}
+              onClick={() => togglePanel('import')}
+            >
+              {plusIcon}
+              곡 등록
+            </button>
             <button
               type="button"
               className={`tt-open-btn${panel === 'show' ? ' is-active' : ''}`}
@@ -286,6 +295,7 @@ export function DataPage({ view }: Props) {
             </button>
           </div>
 
+          <SongImport open={panel === 'import'} onClose={() => setPanel(null)} onImported={reload} />
           {groups && (
             <ShowCreate
               open={panel === 'show'}
@@ -350,9 +360,6 @@ export function DataPage({ view }: Props) {
               })}
             </div>
           )}
-
-          {/* 곡 목록 바로 아래: 붙여넣기로 곡 등록 */}
-          <SongImport onImported={reload} />
         </section>
       )}
 

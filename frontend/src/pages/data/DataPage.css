@@ -147,10 +147,10 @@
   white-space: nowrap;
 }
 
-/* ── 곡 탭 맨 위: 공연 만들기 버튼 ── */
+/* ── 곡 탭 맨 위: [곡 등록 | 공연 만들기] 반씩 한 줄 ── */
 .song-tools {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 12px;
 }
