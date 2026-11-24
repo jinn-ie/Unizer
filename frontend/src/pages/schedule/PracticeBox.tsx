@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import { createReservation, fetchSongs, updateReservation } from '../../api'
-import type { Reservation, Song } from '../../types'
+import { createReservation, fetchMembers, fetchSongMembers, fetchSongs, updateReservation } from '../../api'
+import type { Member, Reservation, Song, SongMember } from '../../types'
 import { SPACES, spaceInfo } from '../../lib/spaces'
 import { addDays, formatMinutes, parseLocal, startOfDay, toDateKey } from '../../lib/date'
 import { SongInput } from './SongInput'
@@ -36,9 +36,16 @@ function choiceKey(c: PracticeChoice | null): string {
   return c.kind === 'song' ? `song:${c.song.id}` : `title:${c.title}`
 }
 
+/** 두 부원 번호 목록이 같은지 (순서 무시) */
+function sameIds(a: Set<number>, b: number[]): boolean {
+  return a.size === new Set(b).size && b.every((id) => a.has(id))
+}
+
 /** 수정할 보충의 기존 값 */
 function initialValues(day: Date, r?: Reservation) {
-  if (!r) return { choice: null, start: 18 * 60, end: 19 * 60, space: SPACES[0].key }
+  if (!r) {
+    return { choice: null, start: 18 * 60, end: 19 * 60, space: SPACES[0].key, personal: false, memberIds: [] }
+  }
   const choice: PracticeChoice | null =
     r.song_id !== null
       ? { kind: 'song', song: { id: r.song_id, title: r.song_title ?? '' } }
@@ -50,10 +57,12 @@ function initialValues(day: Date, r?: Reservation) {
     start: minutesFrom(day, r.start_at),
     end: minutesFrom(day, r.end_at),
     space: r.space,
+    personal: r.personal ?? false, // 백엔드가 아직 안 보내면 단체
+    memberIds: r.member_ids ?? [],
   }
 }
 
-// 1줄: 곡명(자동완성) / 2줄: 시간 | 장소 / 오른쪽 버튼
+// 1줄: 곡명(자동완성) | 단체/개인 / (개인이면) 함께하는 사람 / 2줄: 시간 | 장소 / 오른쪽 버튼
 // 추가 모드: + 로 등록
 // 수정 모드: 바뀐 게 없으면 ✕(취소), 바뀌면 ✓(저장)
 export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props) {
@@ -65,7 +74,11 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
   const init = useMemo(() => initialValues(day, editing), [day, editing])
 
   const [songs, setSongs] = useState<Song[]>([])
+  const [songMembers, setSongMembers] = useState<SongMember[]>([]) // 개인 보충: 곡 멤버 고르기용
+  const [members, setMembers] = useState<Member[]>([])
   const [choice, setChoice] = useState<PracticeChoice | null>(init.choice)
+  const [personal, setPersonal] = useState(init.personal) // 단체(false) / 개인(true)
+  const [picked, setPicked] = useState(() => new Set(init.memberIds)) // 개인 보충에 함께하는 부원
   const [resetKey, setResetKey] = useState(0) // 등록 후 곡명 입력칸 비우기용
   const [start, setStart] = useState(init.start)
   const [end, setEnd] = useState(init.end)
@@ -92,21 +105,63 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchSongs(controller.signal)
-      .then(setSongs)
+    Promise.all([
+      fetchSongs(controller.signal),
+      fetchSongMembers(controller.signal),
+      fetchMembers(controller.signal),
+    ])
+      .then(([s, sm, m]) => {
+        setSongs(s)
+        setSongMembers(sm)
+        setMembers(m)
+      })
       .catch(() => !controller.signal.aborted && showError('곡 목록을 불러오지 못했어요.'))
     return () => controller.abort()
   }, [])
 
+  // 개인 보충은 곡 연습일 때만 (돌리기 같은 공통 일정은 멤버가 없어서 항상 단체)
+  const canPersonal = choice?.kind !== 'title'
+  const isPersonal = personal && canPersonal
 
+  // 고른 곡의 멤버 (리더가 맨 앞) → 개인 보충에서 함께할 사람 고르기
+  const songPeople = useMemo(() => {
+    if (choice?.kind !== 'song') return []
+    const memberById = new Map(members.map((m) => [m.id, m]))
+    return songMembers
+      .filter((sm) => sm.song_id === choice.song.id)
+      .sort((a, b) => Number(b.leader) - Number(a.leader))
+      .flatMap((sm) => {
+        const m = memberById.get(sm.member_id)
+        return m ? [{ ...m, leader: sm.leader }] : []
+      })
+  }, [choice, songMembers, members])
+
+  // 리더가 아닌 사람 중 고른 수 (개인 보충은 한 명 이상 골라야 함)
+  const pickedCount = songPeople.filter((p) => !p.leader && picked.has(p.id)).length
+
+  // 곡이 바뀌면 함께할 사람은 처음부터 다시 고름
+  const selectChoice = (next: PracticeChoice | null) => {
+    if (choiceKey(next) !== choiceKey(choice)) setPicked(new Set())
+    setChoice(next)
+  }
+
+  const togglePick = (memberId: number) =>
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(memberId)) next.delete(memberId)
+      else next.add(memberId)
+      return next
+    })
 
   const changed =
     choiceKey(choice) !== choiceKey(init.choice) ||
     start !== init.start ||
     end !== init.end ||
-    space !== init.space
+    space !== init.space ||
+    isPersonal !== init.personal ||
+    (isPersonal && !sameIds(picked, init.memberIds))
   const isCancel = !!editing && !changed // 수정 모드인데 아직 바꾼 게 없음
-  // 시간 순서는 버튼을 막지 않고, 눌렀을 때 오류 알림으로 알려줌
+  // 시간 순서 · 함께할 사람은 버튼을 막지 않고, 눌렀을 때 오류 알림으로 알려줌
   const canSubmit = !!choice && !saving
 
   const submit = async (e: FormEvent) => {
@@ -114,6 +169,10 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
     if (isCancel || !canSubmit || !choice) return
     if (end <= start) {
       showError('끝나는 시간은 시작 시간보다 늦어야 해요.')
+      return
+    }
+    if (isPersonal && pickedCount === 0) {
+      showError('개인 보충은 함께하는 사람을 한 명 이상 골라 주세요.')
       return
     }
     setSaving(true)
@@ -124,6 +183,9 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
       space,
       start_at: toLocalIso(day, start),
       end_at: toLocalIso(day, end),
+      personal: isPersonal,
+      // 개인 보충: 리더는 항상 + 고른 사람 (지금 곡의 멤버인 사람만). 단체면 빈 목록
+      member_ids: isPersonal ? songPeople.filter((p) => p.leader || picked.has(p.id)).map((p) => p.id) : [],
     }
     try {
       if (editing) {
@@ -131,6 +193,8 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
       } else {
         const created = await createReservation(input)
         setChoice(null)
+        setPersonal(false)
+        setPicked(new Set())
         setResetKey((k) => k + 1)
         setTimeOpen(false)
         onSaved(created)
@@ -150,7 +214,62 @@ export function PracticeBox({ day: sheetDay, editing, onSaved, onCancel }: Props
         onSubmit={submit}
       >
         <div className="qa-main">
-          <SongInput key={resetKey} songs={songs} selected={choice} onSelect={setChoice} />
+          {/* 1줄: 곡명 | 단체/개인 */}
+          <div className="qa-top">
+            <SongInput key={resetKey} songs={songs} selected={choice} onSelect={selectChoice} />
+            <div className="qa-kind" role="group" aria-label="연습 종류">
+              <button
+                type="button"
+                className={!isPersonal ? 'is-on' : undefined}
+                aria-pressed={!isPersonal}
+                onClick={() => setPersonal(false)}
+              >
+                단체
+              </button>
+              <button
+                type="button"
+                className={isPersonal ? 'is-on' : undefined}
+                aria-pressed={isPersonal}
+                onClick={() => setPersonal(true)}
+                disabled={!canPersonal}
+              >
+                개인
+              </button>
+            </div>
+          </div>
+
+          {/* 개인 보충: 함께하는 사람 고르기 (리더는 항상 포함, 잠겨 있음) */}
+          {isPersonal && (
+            <div className="qa-people">
+              <p className="qa-people-head">
+                함께하는 사람 <span>리더는 항상 포함</span>
+              </p>
+              {choice?.kind !== 'song' ? (
+                <p className="qa-people-empty">곡을 고르면 멤버가 나와요</p>
+              ) : songPeople.length === 0 ? (
+                <p className="qa-people-empty">이 곡에 등록된 멤버가 없어요</p>
+              ) : (
+                <ul className="qa-people-list">
+                  {songPeople.map((p) => {
+                    const on = p.leader || picked.has(p.id)
+                    return (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className={`qa-person${on ? ' is-on' : ''}${p.leader ? ' is-leader' : ''}`}
+                          aria-pressed={on}
+                          disabled={p.leader}
+                          onClick={() => togglePick(p.id)}
+                        >
+                          {p.name}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
 
           <div className="qa-row">
             <button

@@ -32,6 +32,104 @@
   gap: 6px;
 }
 
+/* 1줄: 곡명 입력칸 | 단체/개인 (살짝 떨어뜨림) */
+.qa-top {
+  display: flex;
+  align-items: flex-start; /* 자동완성 목록이 펼쳐져도 단체/개인은 위에 그대로 */
+  gap: 8px;
+}
+
+.qa-top .song-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 단체 / 개인 고르기: 입력칸과 같은 높이의 두 칸짜리 스위치 */
+.qa-kind {
+  flex-shrink: 0;
+  display: flex;
+  height: 46px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.qa-kind button {
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.qa-kind button.is-on {
+  background: var(--white);
+  color: var(--black);
+}
+
+.qa-kind button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+/* 개인 보충: 함께하는 사람 */
+.qa-people {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.qa-people-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.qa-people-head span {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--faint);
+}
+
+.qa-people-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.qa-people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.qa-person {
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.qa-person.is-on {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* 리더: 곡 탭과 같은 청록 배경, 항상 켜져 있고 못 끔 */
+.qa-person.is-leader {
+  background: rgba(62, 193, 168, 0.28);
+  color: var(--white);
+  cursor: default;
+}
+
 /* 2줄: 시간 | 장소 (반반) */
 .qa-row {
   display: grid;

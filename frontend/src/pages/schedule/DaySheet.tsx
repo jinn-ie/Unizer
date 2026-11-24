@@ -144,6 +144,7 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
                     <strong className="sheet-song">
                       {it.title}
                     </strong>
+                    {r.personal && <em className="sheet-personal">개인</em>}
                   </div>
                   <span className="sheet-space" style={{ color: space.color, borderColor: space.color }}>
                     {space.label}

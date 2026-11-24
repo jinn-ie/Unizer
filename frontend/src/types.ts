@@ -11,6 +11,10 @@ export interface Reservation {
   created_at: string | null // 등록 시각 (예전 연습은 null)
   updated_at: string | null // 마지막 수정 시각 (수정한 적 없으면 null)
   slot_id: number | null // 시간표로 만든 연습이면 그 블록 번호
+  // 개인 보충 여부 + 함께하는 부원 (리더 포함). 단체 연습이면 false / []
+  // 백엔드가 아직 이 값을 안 보내면 undefined → 단체로 취급
+  personal?: boolean
+  member_ids?: number[]
 }
 
 // 화면에 그리는 일정 1건
@@ -49,6 +53,8 @@ export interface ReservationInput {
   space: string
   start_at: string // "2026-11-18T19:00:00"
   end_at: string
+  personal: boolean // 개인 보충이면 true (곡 연습일 때만)
+  member_ids: number[] // 개인 보충에 함께하는 부원 (리더 포함). 단체면 []
 }
 
 // ── 곡 일괄 등록 (백엔드 schemas.py 의 PreviewSong / ImportSong 과 같은 모양) ──
