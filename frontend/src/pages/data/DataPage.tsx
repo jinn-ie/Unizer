@@ -185,7 +185,6 @@ export function DataPage({ view }: Props) {
           <div className="song-chips">
             {songs.map((song) => {
               const open = openId === song.id
-              const noPractice = song.upcoming === 0
               return (
                 <Fragment key={song.id}>
                   <button
@@ -195,34 +194,14 @@ export function DataPage({ view }: Props) {
                     onClick={() => setOpenId(open ? null : song.id)}
                   >
                     {song.title}
-                    {noPractice && (
-                      <svg
-                        className="song-clock"
-                        viewBox="0 0 24 24"
-                        width="15"
-                        height="15"
-                        aria-label="예정된 연습 없음"
-                      >
-                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.2" />
-                        <path
-                          d="M12 7.5V12l3 2"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
                   </button>
 
                   {open && (
                     <div className="song-detail">
                       <div className="song-meta">
                         <span className="song-count">{song.people.length}명</span>
-                        <span className={`song-times${noPractice ? ' is-empty' : ''}`}>
-                          {noPractice ? '예정된 연습 없음' : `예정된 연습 ${song.upcoming}회`}
-                        </span>
+                        {/* 연습이 잡혀 있을 때만 횟수를 보여줌 (없을 때는 따로 표시하지 않음) */}
+                        {song.upcoming > 0 && <span className="song-times">예정된 연습 {song.upcoming}회</span>}
                       </div>
                       <ul className="name-list">
                         {song.people.map((p) => (
