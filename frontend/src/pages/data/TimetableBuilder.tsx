@@ -749,7 +749,12 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
               />
             )}
 
-            <div className="tb-ed-spaces" role="group" aria-label="장소">
+            <div
+              className="tb-ed-spaces"
+              role="group"
+              aria-label="장소"
+              style={{ '--spaces': SPACES.length } as CSSProperties}
+            >
               {SPACES.map((s) => (
                 <button
                   key={s.key}

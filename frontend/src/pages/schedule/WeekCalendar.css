@@ -70,7 +70,7 @@
 
 .cal-lane-key {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--spaces), 1fr); /* 공간 수 (WeekCalendar 가 넣어 줘요) */
   gap: 1.5px;
   width: calc(100% - 6px);
   margin-top: 2px;
@@ -106,9 +106,9 @@
 }
 
 .cal-day {
-  --gut: 0px; /* 날짜 칸 안쪽 여백 (지금은 없음: 4칸을 똑같이 나눔) */
-  /* 공간 한 줄의 너비 = 날짜 칸을 4등분 */
-  --lane-w: calc((100% - var(--gut) * 2) / 4);
+  --gut: 0px; /* 날짜 칸 안쪽 여백 (지금은 없음: 공간 수만큼 똑같이 나눔) */
+  /* 공간 한 줄의 너비 = 날짜 칸을 공간 수(--spaces)로 나눔 */
+  --lane-w: calc((100% - var(--gut) * 2) / var(--spaces));
   position: relative;
   /* 날짜와 날짜 사이 경계: 두 줄 (1px 선 + 2px 틈 + 1px 선) */
   border-left: 4px double rgba(255, 255, 255, 0.16);

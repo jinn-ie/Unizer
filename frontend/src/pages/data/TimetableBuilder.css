@@ -477,7 +477,7 @@ body.tb-dragging * {
 }
 
 .tb-ed-spaces {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--spaces), minmax(0, 1fr)); /* 공간 수만큼 한 줄에 */
 }
 
 .tb-ed-days button,

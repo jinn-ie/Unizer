@@ -57,7 +57,7 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
     const dayEnd = addDays(day, 1).getTime()
     return items
       .filter((it) => it.start.getTime() < dayEnd && it.end.getTime() > dayStart)
-      // 공간 순서(동방 → 바깥거울 → 대회의실1 → 대회의실2), 같은 공간 안에서는 시간순
+      // 공간 순서(동방 → 바깥거울 → 대회의실1 → 대회의실2 → 아라), 같은 공간 안에서는 시간순
       .sort(
         (a, b) =>
           (SPACE_INDEX.get(a.space) ?? 9) - (SPACE_INDEX.get(b.space) ?? 9) ||

@@ -20,6 +20,7 @@ class Space(enum.StrEnum):
     OUTSIDE_MIRROR = "바깥거울"
     CONF_ROOM_1 = "대회의실1"
     CONF_ROOM_2 = "대회의실2"
+    ARA = "아라"
 
 class Member(Base):
     __tablename__ = "members"
