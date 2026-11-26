@@ -14,7 +14,7 @@ from app.services.passwords import hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["로그인"])
 COOKIE_NAME = "unizer_session"
-SESSION_SECONDS = 60 * 60 * 24 * 7
+SESSION_SECONDS = 60 * 60 * 24 * 180
 
 Db = Annotated[Session, Depends(get_db)]
 SessionCookie = Annotated[str | None, Cookie(alias=COOKIE_NAME)]
@@ -68,7 +68,7 @@ def login(data: LoginIn, request: Request, response: Response, db: Db, token: Se
         COOKIE_NAME,
         new_token,
         max_age=SESSION_SECONDS,
-        path="/api/auth",
+        path="/api",
         httponly=True,
         secure=request.url.scheme == "https",
         samesite="lax",
@@ -94,10 +94,11 @@ def logout(request: Request, db: Db, token: SessionCookie = None):
         db.execute(delete(LoginSession).where(LoginSession.token_hash == hash_token(token)))
         db.commit()
     response = Response(status_code=204)
-    response.delete_cookie(
-        COOKIE_NAME, path="/api/auth", httponly=True,
-        secure=request.url.scheme == "https", samesite="lax",
-    )
+    for path in ("/api", "/api/auth"):
+        response.delete_cookie(
+            COOKIE_NAME, path=path, httponly=True,
+            secure=request.url.scheme == "https", samesite="lax",
+        )
     return response
 
 
