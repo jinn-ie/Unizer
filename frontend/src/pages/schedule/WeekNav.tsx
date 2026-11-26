@@ -8,7 +8,7 @@ interface Props {
 }
 
 // 주 이동 줄: [<] 2026 · 11/23 – 11/29 [>] [오늘]
-// '연습 공간'과 '내 연습'이 같이 써요. (모양은 SchedulePage.css 의 .week-nav)
+// '연습 공간'과 '타임픽'이 같이 써요. (모양은 SchedulePage.css 의 .week-nav)
 export function WeekNav({ weekStart, isThisWeek, onShift, onToday }: Props) {
   return (
     <nav className="week-nav" aria-label="주 이동">

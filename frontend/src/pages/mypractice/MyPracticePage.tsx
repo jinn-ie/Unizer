@@ -1,54 +1,52 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchNotes, fetchReservations, fetchSongMembers } from '../../api'
-import type { Member, Note, Reservation, SongMember } from '../../types'
-import { SPACES } from '../../lib/spaces'
-import { addDays, isSameDay, parseLocal, startOfWeek, toDateKey } from '../../lib/date'
-import { reservationToItem } from '../../lib/schedule'
-import { useWeekSwipe } from '../../lib/useWeekSwipe'
-import { WeekCalendar } from '../schedule/WeekCalendar'
-import { WeekNav } from '../schedule/WeekNav'
-import { DaySheet } from '../schedule/DaySheet'
-import '../schedule/SchedulePage.css' // 주 이동 · 범례 · 시간표 모양은 '연습 공간'과 같이 써요
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  fetchMyTimepick,
+  fetchReservations,
+  fetchSongMembers,
+  HttpError,
+  logoutMember,
+  saveWeeklyTimepick,
+  saveWeekTimepickDays,
+} from '../../api'
+import type { Member, Reservation, SongMember } from '../../types'
+import { addDays, isSameDay, parseDateKey, startOfWeek } from '../../lib/date'
+import { TimepickView } from './TimepickView'
+import { EMPTY_TIMEPICK, fromServer, weekDaysToServer, weeklyToServer } from './timepick'
+import type { Timepick } from './timepick'
+import '../schedule/SchedulePage.css' // 주 이동 · 범례 · 아래 안내 줄 모양은 '연습 공간'과 같이 써요
 import './MyPracticePage.css'
+
+// 칠하고 나서 이만큼 더 안 바뀌면 저장해요 (끌어서 여러 번 바꿔도 한 번만 보내려고)
+const SAVE_DELAY_MS = 400
 
 interface Props {
   member: Member | null // 로그인한 부원 (로그인 전이면 null)
   onLogin: () => void // 로그인 화면으로 가기
+  onSessionExpired: () => void // 로그인이 풀렸을 때: 로그아웃 처리 + 로그인 화면으로
 }
 
 type LoadState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; reservations: Reservation[]; songMembers: SongMember[]; notes: Note[] }
+  | { status: 'login' } // 서버가 401: 예전 로그인 쿠키라 다시 로그인해야 해요
+  | { status: 'ready'; reservations: Reservation[]; songMembers: SongMember[] }
 
-// ── 곡이 아닌 공통 일정 중 '내 연습'에 보여줄 것 ──
-const ALL_MEMBER_TITLES = ['의돌', '신돌'] // 전체 부원의 일정
-const TWO_GEN_TITLES = ['돌리기', '기본기'] // 그 해의 두 기수만의 일정 (연도 - 1984기, 연도 - 1983기)
+/** 저장할 범위: 'weekly' = 매주 칸 전체 / "2026-11-29" = 그 주(일요일부터)의 이 날만 칸 */
+export type SaveScope = string
 
-/** 공통 일정(title 로 잡힌 연습)이 이 기수의 부원에게 해당하는지 */
-function isMyCommonSchedule(r: Reservation, gen: number): boolean {
-  if (r.title === null) return false
-  const title = r.title.trim()
-  if (ALL_MEMBER_TITLES.includes(title)) return true
-  if (TWO_GEN_TITLES.includes(title)) {
-    // "당해 연도"는 그 연습이 있는 날짜의 연도 (2026년이면 42기 · 43기, 2027년이면 43기 · 44기)
-    const year = parseLocal(r.start_at).getFullYear()
-    return gen === year - 1984 || gen === year - 1983
-  }
-  return false // 사람 이름으로 된 일정 등 나머지는 일단 안 보여줌
-}
+/** 자동 저장 상태 (화면 아래에 보여줘요) */
+export type SaveState = 'idle' | 'saving' | 'saved' | 'error' | 'login'
 
-// '내 연습' 탭: '연습 공간'과 같은 주별 시간표인데, 나에게 해당하는 연습만 보여줘요.
-//   - 내가 멤버로 들어간 곡의 연습
-//   - 공통 일정 중 나에게 해당하는 것 (위 isMyCommonSchedule)
+// '타임픽' 탭: 안 되는 시간을 칠하고, 리더는 곡 팀원 전체를 겹쳐 봐요. (화면은 TimepickView)
+// 내 유디 연습도 여기서 회색 막대(곡명)로 보여서, 예전 '내 연습' 화면 대신이에요.
 // 누가 "나"인지 알아야 해서 로그인한 뒤에만 볼 수 있어요.
-export function MyPracticePage({ member, onLogin }: Props) {
+export function MyPracticePage({ member, onLogin, onSessionExpired }: Props) {
   if (!member) {
     return (
       <div className="mypractice-empty">
         <div className="error-card">
-          <strong>로그인하면 내 연습을 볼 수 있어요</strong>
-          <p>내가 참여한 곡의 연습과 내 기수의 공통 일정을 모아서 보여드려요.</p>
+          <strong>로그인하면 타임픽을 쓸 수 있어요</strong>
+          <p>내 유디 연습을 보고, 안 되는 시간을 표시할 수 있어요.</p>
           <button type="button" className="mypractice-login" onClick={onLogin}>
             로그인하기
           </button>
@@ -56,35 +54,37 @@ export function MyPracticePage({ member, onLogin }: Props) {
       </div>
     )
   }
-  return <MyPracticeCalendar member={member} />
+  return <MyTimepick member={member} onSessionExpired={onSessionExpired} />
 }
 
-function MyPracticeCalendar({ member }: { member: Member }) {
+function MyTimepick({ member, onSessionExpired }: { member: Member; onSessionExpired: () => void }) {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
   const [now, setNow] = useState(() => new Date())
-  const [sheet, setSheet] = useState<{ day: Date; focusKey?: string } | null>(null)
+  const [myPick, setMyPick] = useState<Timepick>(EMPTY_TIMEPICK) // 내가 칠한 칸
 
-  // 연습 + 곡 멤버 + 메모를 동시에 불러옴 (메모는 부가 기능이라 실패해도 빈 목록)
+  // 연습 + 곡 멤버 + 내 타임픽을 동시에 불러옴
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
       fetchReservations(controller.signal),
       fetchSongMembers(controller.signal),
-      fetchNotes(controller.signal).catch(() => [] as Note[]),
+      fetchMyTimepick(controller.signal),
     ])
-      .then(([reservations, songMembers, notes]) => setLoad({ status: 'ready', reservations, songMembers, notes }))
+      .then(([reservations, songMembers, pick]) => {
+        setMyPick(fromServer(pick))
+        setLoad({ status: 'ready', reservations, songMembers })
+      })
       .catch((e) => {
-        if (!controller.signal.aborted) {
-          console.error(e)
-          setLoad({ status: 'error' })
-        }
+        if (controller.signal.aborted) return
+        console.error(e)
+        setLoad({ status: e instanceof HttpError && e.status === 401 ? 'login' : 'error' })
       })
     return () => controller.abort()
   }, [reloadKey])
 
-  // 현재 시각 표시선을 1분마다 갱신
+  // '오늘' 표시를 1분마다 갱신 (자정이 지나면 오늘 칸이 바뀌게)
   useEffect(() => {
     const t = window.setInterval(() => setNow(new Date()), 60_000)
     return () => window.clearInterval(t)
@@ -92,115 +92,124 @@ function MyPracticeCalendar({ member }: { member: Member }) {
 
   const thisWeek = startOfWeek(now)
   const isThisWeek = isSameDay(weekStart, thisWeek)
-
-  // 내가 멤버인 곡 번호들
-  const mySongIds = useMemo(() => {
-    if (load.status !== 'ready') return new Set<number>()
-    return new Set(load.songMembers.filter((sm) => sm.member_id === member.id).map((sm) => sm.song_id))
-  }, [load, member.id])
-
-  // 내 곡의 연습 + 나에게 해당하는 공통 일정
-  const items = useMemo(() => {
-    if (load.status !== 'ready') return []
-    return load.reservations
-      .filter((r) => {
-        if (r.song_id === null) return isMyCommonSchedule(r, member.gen)
-        // 개인 보충: 같은 곡이어도 함께하는 사람으로 고른 부원(리더 포함)에게만
-        if (r.personal) return (r.member_ids ?? []).includes(member.id)
-        return mySongIds.has(r.song_id) // 단체 연습: 그 곡 멤버 모두
-      })
-      .map(reservationToItem)
-  }, [load, mySongIds, member.gen, member.id])
-
-  const weekCount = useMemo(() => {
-    const s = weekStart.getTime()
-    const e = addDays(weekStart, 7).getTime()
-    return items.filter((it) => it.start.getTime() < e && it.end.getTime() > s).length
-  }, [items, weekStart])
-
-  const notes = useMemo(() => (load.status === 'ready' ? load.notes : []), [load])
-
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
-  const { onTouchStart, onTouchEnd } = useWeekSwipe(shiftWeek)
+
+  // ── 자동 저장 ──
+  // 칸을 바꾸면 "어느 범위가 바뀌었는지"만 적어 두고, SAVE_DELAY_MS 동안 더 안 바뀌면
+  // 그 범위를 통째로 서버에 보내요. (매주 칸 전체 / 그 주의 이 날만 칸)
+  const pickRef = useRef(myPick) // 보내는 순간의 최신 칸
+  useLayoutEffect(() => {
+    pickRef.current = myPick
+  })
+  const pendingRef = useRef(new Set<SaveScope>()) // 아직 안 보낸 범위
+  const queueRef = useRef<Promise<void>>(Promise.resolve()) // 저장을 하나씩 차례로 보내는 줄
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [editCount, setEditCount] = useState(0) // 바뀔 때마다 +1 → 저장 타이머를 다시 시작
+
+  /** 바뀐 범위를 서버에 보내기 (앞 저장이 끝난 뒤에 보내서, 예전 값이 나중에 덮어쓰지 않게) */
+  const flush = useCallback(() => {
+    const scopes = [...pendingRef.current]
+    if (scopes.length === 0) return
+    pendingRef.current.clear()
+    setSaveState('saving')
+    queueRef.current = queueRef.current.then(async () => {
+      try {
+        for (const scope of scopes) {
+          const tp = pickRef.current
+          if (scope === 'weekly') {
+            await saveWeeklyTimepick(weeklyToServer(tp))
+          } else {
+            const start = parseDateKey(scope)
+            if (start) await saveWeekTimepickDays(scope, weekDaysToServer(tp, start))
+          }
+        }
+        // 보내는 동안 또 바뀐 게 없으면 "저장했어요"
+        if (pendingRef.current.size === 0) setSaveState('saved')
+      } catch (e) {
+        console.error(e)
+        for (const scope of scopes) pendingRef.current.add(scope) // 다시 시도할 때 보내게 남겨 둠
+        setSaveState(e instanceof HttpError && e.status === 401 ? 'login' : 'error')
+      }
+    })
+  }, [])
+
+  // 바뀐 뒤 잠깐 기다렸다가 저장 (그 사이 또 바뀌면 타이머를 다시 시작)
+  useEffect(() => {
+    if (editCount === 0) return
+    const t = window.setTimeout(flush, SAVE_DELAY_MS)
+    return () => window.clearTimeout(t)
+  }, [editCount, flush])
+
+  // 다른 탭으로 나가면 기다리지 않고 바로 저장
+  useEffect(() => () => flush(), [flush])
+
+  /** 칸 바꾸기: 화면에는 바로 반영하고, 범위는 저장할 목록에 적어 둬요 */
+  const editPick = useCallback((update: (tp: Timepick) => Timepick, scope: SaveScope) => {
+    setMyPick(update)
+    pendingRef.current.add(scope)
+    setEditCount((n) => n + 1)
+  }, [])
+
+  // 로그인이 풀렸을 때: 예전 쿠키까지 지우고(로그아웃) 로그인 화면으로
+  const relogin = () => {
+    logoutMember()
+      .catch(() => {})
+      .finally(onSessionExpired)
+  }
+
+  // 불러오는 중 · 실패 안내 (표 위에 덮어서 보여줘요. 덮여 있는 동안은 칠할 수 없어요)
+  let overlay = null
+  if (load.status === 'loading') {
+    overlay = <div className="cal-overlay">불러오는 중…</div>
+  } else if (load.status === 'login') {
+    overlay = (
+      <div className="cal-overlay">
+        <div className="error-card">
+          <strong>다시 로그인해 주세요</strong>
+          <p>로그인 방식이 바뀌어서 한 번만 다시 로그인하면 돼요.</p>
+          <button type="button" className="mypractice-login" onClick={relogin}>
+            다시 로그인
+          </button>
+        </div>
+      </div>
+    )
+  } else if (load.status === 'error') {
+    overlay = (
+      <div className="cal-overlay">
+        <div className="error-card">
+          <strong>타임픽을 불러오지 못했어요</strong>
+          <p>백엔드 서버가 켜져 있는지 확인해 주세요.</p>
+          <button
+            type="button"
+            className="retry-btn"
+            onClick={() => {
+              setLoad({ status: 'loading' })
+              setReloadKey((k) => k + 1)
+            }}
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <>
-      <WeekNav
-        weekStart={weekStart}
-        isThisWeek={isThisWeek}
-        onShift={shiftWeek}
-        onToday={() => setWeekStart(thisWeek)}
-      />
-
-      <ul className="legend" aria-label="공간 색상 (날짜 칸 안 왼쪽부터)">
-        {SPACES.map((s) => (
-          <li key={s.key}>
-            <i style={{ background: s.color }} />
-            {s.label}
-          </li>
-        ))}
-      </ul>
-
-      <main className="cal-wrap" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        {/* 한 사람이 같은 시간에 두 곳에 있을 수 없으니, 날짜마다 한 칸 + 색으로 공간 구분 */}
-        <WeekCalendar
-          layout="single"
-          weekStart={weekStart}
-          items={items}
-          now={now}
-          onSelectDay={(day, focusKey) => setSheet({ day, focusKey })}
-        />
-
-        {load.status === 'loading' && <div className="cal-overlay">불러오는 중…</div>}
-
-        {load.status === 'error' && (
-          <div className="cal-overlay">
-            <div className="error-card">
-              <strong>연습 정보를 불러오지 못했어요</strong>
-              <p>백엔드 서버가 켜져 있는지 확인해 주세요.</p>
-              <button
-                type="button"
-                className="retry-btn"
-                onClick={() => {
-                  setLoad({ status: 'loading' })
-                  setReloadKey((k) => k + 1)
-                }}
-              >
-                다시 시도
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {load.status === 'ready' && (
-        <p className="week-summary">
-          {weekCount > 0 ? (
-            <>
-              이 주의 내 연습 <b>{weekCount}건</b> · 내 곡과 내 기수 일정만 보여요
-            </>
-          ) : mySongIds.size === 0 ? (
-            '아직 참여한 곡이 없어요'
-          ) : (
-            '이 주에는 내 연습이 없어요'
-          )}
-        </p>
-      )}
-
-      {/* 날짜 보드: '연습 공간'과 같은 화면인데, 목록에는 내 연습만 */}
-      {sheet && (
-        <DaySheet
-          day={sheet.day}
-          focusKey={sheet.focusKey}
-          items={items}
-          notes={notes.filter((n) => n.date_on === toDateKey(sheet.day))}
-          onClose={() => setSheet(null)}
-          onChanged={(focusKey) => {
-            setSheet((s) => s && { ...s, focusKey })
-            setReloadKey((k) => k + 1)
-          }}
-        />
-      )}
-    </>
+    <TimepickView
+      member={member}
+      now={now}
+      weekStart={weekStart}
+      isThisWeek={isThisWeek}
+      onShiftWeek={shiftWeek}
+      onToday={() => setWeekStart(thisWeek)}
+      reservations={load.status === 'ready' ? load.reservations : []}
+      songMembers={load.status === 'ready' ? load.songMembers : []}
+      myPick={myPick}
+      onEditPick={editPick}
+      saveState={saveState}
+      onRetrySave={flush}
+      onRelogin={relogin}
+      overlay={overlay}
+    />
   )
 }

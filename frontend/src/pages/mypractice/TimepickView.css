@@ -1,0 +1,174 @@
+/* ── 타임픽 화면 ───────────────────────── */
+/* 주 이동 · 범례 · 아래 안내 줄 모양은 SchedulePage.css 를 같이 써요. */
+
+/* [나] [곡A 팀] ......... [이 주만 | 매주] */
+.tp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 곡이 많으면 옆으로 밀어서 봐요 */
+.tp-chips {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tp-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.tp-chip {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tp-chip.is-on {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--black);
+}
+
+/* 연습 등록의 [단체 | 개인] 과 같은 모양 (작게) */
+.tp-mode {
+  flex-shrink: 0;
+  display: flex;
+  height: 32px;
+  margin-left: auto; /* 칩이 없어도 오른쪽에 */
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.tp-mode button {
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tp-mode button.is-on {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* 매주 모드: 주 이동 줄 대신 제목 (높이를 주 이동 줄과 맞춤) */
+.tp-weekly-head {
+  height: 36px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.tp-weekly-head strong {
+  font-size: 17px;
+}
+
+.tp-weekly-head span {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+/* ── 색 설명: 칸 색과 같은 견본 ── */
+.tp-legend {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.legend .tp-sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.tp-sw-row {
+  display: flex;
+  gap: 2px;
+}
+
+/* 팀 색 설명: 모두 안 됨 [ㅁㅁㅁㅁㅁ] 모두 됨 (한 줄, 가운데) */
+.tp-legend .tp-legend-scale {
+  flex: 1;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tp-sw.is-free {
+  background: color-mix(in srgb, var(--teal) 85%, transparent);
+}
+
+.tp-sw.is-busy {
+  background: color-mix(in srgb, var(--gray) 40%, transparent);
+}
+
+.tp-sw.is-practice {
+  background: color-mix(in srgb, var(--gray) 40%, var(--surface));
+  border-left: 3px solid var(--gray);
+}
+
+.tp-sw.is-lv1 {
+  background: color-mix(in srgb, var(--teal) 16%, transparent);
+}
+
+.tp-sw.is-lv2 {
+  background: color-mix(in srgb, var(--teal) 32%, transparent);
+}
+
+.tp-sw.is-lv3 {
+  background: color-mix(in srgb, var(--teal) 50%, transparent);
+}
+
+.tp-sw.is-lv4 {
+  background: color-mix(in srgb, var(--teal) 85%, transparent);
+}
+
+/* ── 아래 안내 줄 ── */
+.tp-summary {
+  word-break: keep-all; /* 한글을 단어 단위로 줄바꿈 */
+  line-height: 1.5;
+}
+
+/* 자동 저장 상태: 저장 중 · 저장했어요 · 실패 (+ 다시 시도 버튼) */
+.tp-save {
+  display: block;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.tp-save.is-saved {
+  color: var(--teal);
+}
+
+.tp-save.is-error {
+  color: var(--red);
+}
+
+.tp-save button {
+  margin-left: 6px;
+  color: var(--white);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 아주 좁은 화면(320px 등): 색 설명 간격 줄이기 */
+@media (max-width: 360px) {
+  .tp-legend {
+    gap: 8px;
+  }
+}

@@ -94,8 +94,8 @@ frontend/
 | 기능 | 화면(탭) | 프론트 | 백엔드 | 테이블 | 담당 |
 |---|---|---|---|---|---|
 | **연습 공간** — 주간 캘린더, 연습 등록·수정·삭제, 날짜별 메모 | 연습 공간 | `pages/schedule/` | `routers/reservations.py`<br>`routers/notes.py`<br>`services/conflicts.py` | `reservations`<br>`notes` | jinn-ie |
+| **타임픽** — 안 되는 시간을 30분 칸으로 칠함 (가능 청록 / 불가능 회색, 꾹 눌러 끌면 직사각형). 매주 반복 / 이 주만, 칠하면 자동 저장. 내 유디 연습(내 곡의 연습 + 내게 해당하는 공통 일정: 의돌·신돌은 전체, 돌리기·기본기는 연도−1984기·연도−1983기)은 곡명이 든 회색 막대로 자동 표시(잠김). 리더는 내가 리더인 곡의 팀원 전체를 겹쳐 봄 (로그인 필요) | 타임픽 | `pages/mypractice/` (`MyPracticePage` 불러오기 · 자동 저장, `TimepickView`, `TimepickGrid`, 칸 규칙 · 서버 모양 변환 `timepick.ts`, 연습 고르는 규칙 `memberPractice.ts`)<br>`pages/schedule/` 의 `WeekNav` 를 같이 씀 | `routers/timepicks.py`<br>`routers/reservations.py`<br>`routers/songs.py` | `timepick_weekly`<br>`timepick_days`<br>`reservations`<br>`song_members` | |
 | **곡** — 곡 목록, 붙여넣기로 곡 등록, 시간표 등록·수정·삭제 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableBuilder`) | `routers/songs.py`<br>`routers/timetables.py`<br>`services/timetables.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`timetables`<br>`timetable_slots` | jinn-ie |
-| **내 연습** — 내가 멤버인 곡의 연습 + 내게 해당하는 공통 일정(의돌·신돌은 전체, 돌리기·기본기는 연도−1984기·연도−1983기)을 주별 시간표로 (로그인 필요) | 내 연습 | `pages/mypractice/` (`MyPracticePage`)<br>`pages/schedule/` 의 `WeekCalendar`, `WeekNav`, `DaySheet` 를 같이 씀 | `routers/reservations.py`<br>`routers/songs.py` | `reservations`<br>`song_members` | |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
 | **로그인** — 기수·이름(+ 숫자 4자리 비밀번호)으로 로그인, 로그인 상태 확인 | 상단 로그인 | `pages/auth/` | `routers/auth.py`, `member_password.py` | `members.password_hash`<br>`login_sessions` | |
 | **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경 | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |
