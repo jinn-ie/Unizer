@@ -9,13 +9,53 @@
   line-height: 1.5;
 }
 
+/* 접힌 한 줄: [연습 공간 이용 안내 ........ ▾] */
+.notice-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--white);
+  font-size: 12px;
+  text-align: left;
+}
+
+/* 앞의 노란 점: 안내라는 표시 */
+.notice-toggle span::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: var(--yellow);
+  vertical-align: middle;
+}
+
+.notice-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+/* 펼치면 화살표가 위로 */
+.notice.is-open .notice-chevron {
+  transform: rotate(180deg);
+}
+
 .notice ul {
   list-style: none;
-  margin: 0;
+  margin: 6px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+/* display: flex 가 hidden 을 덮어써서, 접혀 있을 때 다시 숨겨요 */
+.notice ul[hidden] {
+  display: none;
 }
 
 .notice li {

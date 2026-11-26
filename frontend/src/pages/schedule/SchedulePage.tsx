@@ -33,6 +33,7 @@ export function SchedulePage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [now, setNow] = useState(() => new Date())
   const [sheet, setSheet] = useState<{ day: Date; focusKey?: string } | null>(null)
+  const [noticeOpen, setNoticeOpen] = useState(false) // 이용 안내: 처음엔 접힌 한 줄 (달력을 넓게)
 
   // 연습 + 메모 API 를 동시에 호출하고, 다 오면 화면에 반영
   // 메모는 부가 기능이라, 실패해도 빈 목록으로 두고 캘린더는 그대로 보여줌
@@ -81,8 +82,21 @@ export function SchedulePage() {
 
   return (
     <>
-      <aside className="notice" aria-label="안내">
-        <ul>
+      {/* 이용 안내: 접힌 한 줄 막대, 누르면 펼쳐져요 */}
+      <aside className={`notice${noticeOpen ? ' is-open' : ''}`} aria-label="안내">
+        <button
+          type="button"
+          className="notice-toggle"
+          aria-expanded={noticeOpen}
+          aria-controls="notice-list"
+          onClick={() => setNoticeOpen((o) => !o)}
+        >
+          <span>연습 공간 이용 안내</span>
+          <svg className="notice-chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden>
+            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <ul id="notice-list" hidden={!noticeOpen}>
           <li>
             <span>서로 배려하면서 잡아주세요.</span>
           </li>
