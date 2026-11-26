@@ -68,6 +68,51 @@
   font-size: 13px;
 }
 
+/* ── 기수 · 이름 한 줄: [ 42 ]기 [ 홍길동 ] ── */
+.login-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 위에 글자(label)가 없으니 칸 위 여백도 없애요 */
+.login-who input {
+  margin-top: 0;
+}
+
+/* 기수: 두세 자리라 좁게, 가운데 정렬 */
+.login-who .login-gen {
+  flex-shrink: 0;
+  width: 72px;
+  text-align: center;
+  appearance: textfield; /* 숫자 칸의 위아래 화살표 숨기기 (파이어폭스) */
+  -moz-appearance: textfield;
+}
+
+/* 숫자 칸의 위아래 화살표 숨기기 (크롬 · 사파리) */
+.login-who .login-gen::-webkit-outer-spin-button,
+.login-who .login-gen::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 이름: 남은 폭을 다 써요 */
+.login-who .login-name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* "기": 입력 글씨와 같은 크기 · 색 (.login-form span 의 흐린 작은 글씨를 덮어써요) */
+.login-form .login-gen-unit {
+  margin-right: 4px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.login-form input::placeholder {
+  color: var(--faint);
+}
+
 .login-card .login-error {
   margin-bottom: 0;
   color: var(--red);

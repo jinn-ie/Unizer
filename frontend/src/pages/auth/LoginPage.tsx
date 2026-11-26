@@ -53,20 +53,20 @@ export function LoginPage({ visible, status, onLogin, onRetry }: LoginPageProps)
         )}
         {status === 'ready' && (
           <form className="login-form" onSubmit={submitLogin}>
-            <label>
-              기수
+            {/* 기수 · 이름 한 줄: [ 42 ]기 [ 홍길동 ] (칸 이름은 칸 안의 흐린 글씨로) */}
+            <div className="login-who">
               <input
+                className="login-gen" aria-label="기수" placeholder="기수"
                 type="number" inputMode="numeric" min={1} max={2147483647} required
                 value={gen} onChange={(event) => setGen(event.target.value)}
               />
-            </label>
-            <label>
-              부원 이름
+              <span className="login-gen-unit" aria-hidden>기</span>
               <input
+                className="login-name" aria-label="부원 이름" placeholder="이름"
                 autoComplete="username" maxLength={30} required
                 value={name} onChange={(event) => setName(event.target.value)}
               />
-            </label>
+            </div>
             <label>
               비밀번호 <span>(선택)</span>
               {/* 숫자 4자리만: 숫자 키패드가 뜨고, 숫자가 아닌 글자는 지워요. */}
