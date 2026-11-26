@@ -308,7 +308,7 @@ export function TimepickView({
   return (
     <>
       <div className="tp-bar">
-        {/* 내가 리더인 곡이 있을 때만: [나] [곡A 팀] [곡B 팀] */}
+        {/* 내가 리더인 곡이 있을 때만: [나] [곡A] [곡B] (곡 칩 = 그 곡 팀원 전체) */}
         {teamSongs.length > 0 && (
           <div className="tp-chips" role="group" aria-label="누구의 타임픽">
             <button
@@ -329,7 +329,7 @@ export function TimepickView({
                   aria-pressed={on}
                   onClick={() => pickTarget({ kind: 'team', songId: s.id })}
                 >
-                  {s.title} 팀
+                  {s.title}
                 </button>
               )
             })}
