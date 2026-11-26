@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { formatMinutes } from '../../lib/date'
-import { CAL_DEFAULT_TOP_MIN, CAL_SLOT_MIN, CAL_START_MIN } from '../../lib/schedule'
+import { CAL_DEFAULT_BOTTOM_MIN, CAL_SLOT_MIN, CAL_START_MIN } from '../../lib/schedule'
 import { TP_ROWS } from './timepick'
 // 머리줄 · 시각 · 격자선 모양은 '연습 공간' 캘린더와 같은 클래스(.cal-…)를 써요.
 import '../schedule/WeekCalendar.css'
 import './TimepickGrid.css'
 
-const ROW_PX = 24 // 30분 한 칸 높이
+const ROW_PX = 24 // 30분 한 칸 높이 ('연습 공간' 캘린더와 같아요)
 const LONG_PRESS_MS = 300 // 이만큼 꾹 누르면 끌어서 칠하기 시작 ('시간표 만들기'와 비슷하게)
 const TOLERANCE_PX = 8 // 누르는 동안 이보다 많이 움직이면 스크롤하려는 것
 const EDGE_PX = 40 // 칠하는 중 손가락이 표 위 · 아래 끝에서 이만큼 안으로 들어오면 자동 스크롤
@@ -95,9 +95,20 @@ export function TimepickGrid({ columns, cellOf, blocks = [], paint, onTapCell, s
   const paintingRef = useRef<Painting | null>(null)
   const [painting, setPainting] = useState<Painting | null>(null)
 
-  // 처음 그릴 때 16:00 이 맨 위에 오도록
+  // 처음엔 23:00 이 화면 맨 아래에 오게 ('연습 공간'과 같아요)
+  // 표 영역 높이가 바뀌면 아래 끝은 그대로 두고 위쪽이 늘거나 줄어요.
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = toY(CAL_DEFAULT_TOP_MIN)
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollTop = toY(CAL_DEFAULT_BOTTOM_MIN) - el.clientHeight // 0 보다 작으면 브라우저가 0 으로 맞춰요
+    let prevHeight = el.clientHeight
+    const ro = new ResizeObserver(() => {
+      // 영역이 커진 만큼 위로 올려야 아래 끝이 그대로 있어요 (작아지면 반대로)
+      el.scrollTop -= el.clientHeight - prevHeight
+      prevHeight = el.clientHeight
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
 
   /** 화면 좌표 → 그 자리의 칸 (표 밖이면 null) */

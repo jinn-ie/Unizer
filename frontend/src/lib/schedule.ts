@@ -6,9 +6,9 @@ import { parseLocal } from './date'
 export const CAL_SLOT_MIN = 30 // 한 칸 = 30분
 export const CAL_DAY_MIN = 24 * 60 // 표의 끝 24:00
 export const CAL_START_MIN = 8 * 60 // 위로 스크롤하면 08:00 까지 보임
-export const CAL_DEFAULT_TOP_MIN = 16 * 60 // 처음 화면 맨 위에 보일 시각
-// 16:00~24:00 이 스크롤 영역에 꽉 차게 보이는 칸 수
-export const CAL_VISIBLE_ROWS = (CAL_DAY_MIN - CAL_DEFAULT_TOP_MIN) / CAL_SLOT_MIN
+// 처음 화면의 바닥에 올 시각. 그 아래(23:00~24:00)는 스크롤하면 보여요.
+// 칸 높이는 고정이라, 화면이 넓으면 위쪽 시간이 더 보여요.
+export const CAL_DEFAULT_BOTTOM_MIN = 23 * 60
 
 /** 화면에 보여줄 이름: 곡 연습이면 곡명, 공통 일정이면 title */
 function displayTitle(x: { song_title: string | null; title: string | null }): string {

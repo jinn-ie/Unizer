@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { ScheduleItem } from '../../types'
 import { SPACES, SPACE_INDEX } from '../../lib/spaces'
@@ -10,16 +10,15 @@ import {
 } from '../../lib/date'
 import {
   CAL_DAY_MIN as DAY_MIN,
-  CAL_DEFAULT_TOP_MIN as DEFAULT_TOP_MIN,
+  CAL_DEFAULT_BOTTOM_MIN as DEFAULT_BOTTOM_MIN,
   CAL_SLOT_MIN as SLOT_MIN,
   CAL_START_MIN as BASE_START_MIN,
-  CAL_VISIBLE_ROWS as VISIBLE_ROWS,
 } from '../../lib/schedule'
 import './WeekCalendar.css'
 
-// 시간 범위(08:00~24:00, 처음엔 16:00부터)는 lib/schedule.ts 에서 타임픽 표와 같이 써요.
-const MIN_ROW_PX = 18
-const MAX_ROW_PX = 44
+// 시간 범위(08:00~24:00)는 lib/schedule.ts 에서 타임픽 표와 같이 써요.
+// 칸 높이는 고정이에요. 화면(달력 영역)이 넓어지면 칸이 커지는 대신 위쪽 시간이 더 보여요.
+const ROW_PX = 24 // 30분 한 칸 높이 (타임픽 표와 같아요)
 
 interface Segment {
   item: ScheduleItem
@@ -114,39 +113,26 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
   }, [segments])
   const totalRows = (DAY_MIN - gridStartMin) / SLOT_MIN
 
-  // ── 칸 높이: 스크롤 영역 높이에 16:00~24:00 이 딱 맞게 ──
+  // ── 스크롤: 처음엔 23:00 이 화면 맨 아래에 오게 ──
+  // 달력 영역 높이가 바뀌면(안내를 펼치고 접는 등) 아래 끝은 그대로 두고 위쪽이 늘거나 줄어요.
   const scrollRef = useRef<HTMLDivElement>(null)
-  const rowRef = useRef<number | null>(null)
   const gridStartRef = useRef(gridStartMin)
-  const pendingTopMin = useRef<number | null>(null)
-  const [rowPx, setRowPx] = useState(20)
 
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const measure = () => {
-      const next = Math.min(MAX_ROW_PX, Math.max(MIN_ROW_PX, el.clientHeight / VISIBLE_ROWS))
-      const prev = rowRef.current
-      if (prev !== null && Math.abs(prev - next) < 0.5) return
-      // 처음엔 16:00 으로, 이후 화면 크기가 바뀌면 보고 있던 시각을 유지
-      pendingTopMin.current =
-        prev === null ? DEFAULT_TOP_MIN : gridStartRef.current + (el.scrollTop / prev) * SLOT_MIN
-      rowRef.current = next
-      setRowPx(next)
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
+    // 23:00 의 위치 - 보이는 높이 = 23:00 이 바닥에 오는 스크롤 위치 (0 보다 작으면 브라우저가 0 으로 맞춰요)
+    const bottomY = ((DEFAULT_BOTTOM_MIN - gridStartRef.current) / SLOT_MIN) * ROW_PX
+    el.scrollTop = bottomY - el.clientHeight
+    let prevHeight = el.clientHeight
+    const ro = new ResizeObserver(() => {
+      // 영역이 커진 만큼 위로 올려야 아래 끝이 그대로 있어요 (작아지면 반대로)
+      el.scrollTop -= el.clientHeight - prevHeight
+      prevHeight = el.clientHeight
+    })
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-
-  useLayoutEffect(() => {
-    const el = scrollRef.current
-    // 측정된 칸 높이로 다시 그려진 뒤에만 스크롤 위치를 맞춤
-    if (!el || pendingTopMin.current === null || rowPx !== rowRef.current) return
-    el.scrollTop = ((pendingTopMin.current - gridStartMin) / SLOT_MIN) * rowPx
-    pendingTopMin.current = null
-  }, [rowPx, gridStartMin])
 
   // 주를 바꿔서 시작 시각이 달라져도 보던 시각이 그대로 보이게
   useLayoutEffect(() => {
@@ -154,11 +140,11 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
     const prevStart = gridStartRef.current
     gridStartRef.current = gridStartMin
     if (!el || prevStart === gridStartMin) return
-    el.scrollTop += ((prevStart - gridStartMin) / SLOT_MIN) * rowPx
-  }, [gridStartMin, rowPx])
+    el.scrollTop += ((prevStart - gridStartMin) / SLOT_MIN) * ROW_PX
+  }, [gridStartMin])
 
-  const toY = (min: number) => ((min - gridStartMin) / SLOT_MIN) * rowPx
-  const bodyHeight = totalRows * rowPx
+  const toY = (min: number) => ((min - gridStartMin) / SLOT_MIN) * ROW_PX
+  const bodyHeight = totalRows * ROW_PX
 
   const hourMarks: number[] = []
   for (let m = gridStartMin; m < DAY_MIN; m += 60) hourMarks.push(m)
@@ -210,7 +196,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
               <i
                 key={k}
                 className={(gridStartMin + k * SLOT_MIN) % 60 === 0 ? 'is-hour' : undefined}
-                style={{ top: k * rowPx }}
+                style={{ top: k * ROW_PX }}
               />
             ))}
           </div>
