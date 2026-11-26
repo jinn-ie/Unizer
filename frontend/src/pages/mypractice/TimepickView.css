@@ -67,7 +67,7 @@
 
 /* 매주 모드: 주 이동 줄 대신 제목 (높이를 주 이동 줄과 맞춤) */
 .tp-weekly-head {
-  height: 36px;
+  min-height: 36px; /* 좁은 폰에서 설명이 두 줄이 되면 그만큼 늘어나요 */
   margin-top: 12px;
   display: flex;
   flex-direction: column;
@@ -83,6 +83,8 @@
 .tp-weekly-head span {
   font-size: 11px;
   color: var(--faint);
+  text-align: center;
+  word-break: keep-all; /* 한글을 단어 단위로 줄바꿈 */
 }
 
 /* ── 색 설명: 칸 색과 같은 견본 ── */

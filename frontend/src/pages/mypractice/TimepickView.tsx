@@ -308,7 +308,7 @@ export function TimepickView({
   return (
     <>
       <div className="tp-bar">
-        {/* 내가 리더인 곡이 있을 때만: [나] [곡A 팀] [곡B 팀] */}
+        {/* 내가 리더인 곡이 있을 때만: [나] [곡A] [곡B] (곡 칩 = 그 곡 팀원 전체) */}
         {teamSongs.length > 0 && (
           <div className="tp-chips" role="group" aria-label="누구의 타임픽">
             <button
@@ -329,7 +329,7 @@ export function TimepickView({
                   aria-pressed={on}
                   onClick={() => pickTarget({ kind: 'team', songId: s.id })}
                 >
-                  {s.title} 팀
+                  {s.title}
                 </button>
               )
             })}
@@ -363,7 +363,7 @@ export function TimepickView({
       {isWeekly ? (
         <div className="tp-weekly-head">
           <strong>매주 반복</strong>
-          <span>수업 · 알바처럼 매주 안 되는 시간</span>
+          <span>수업 · 알바등 반복되는 일정 | 유디 정규 연습은 표시할 필요 X</span>
         </div>
       ) : (
         <WeekNav weekStart={weekStart} isThisWeek={isThisWeek} onShift={shiftWeek} onToday={goToday} />
