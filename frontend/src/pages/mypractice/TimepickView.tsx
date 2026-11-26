@@ -363,7 +363,7 @@ export function TimepickView({
       {isWeekly ? (
         <div className="tp-weekly-head">
           <strong>매주 반복</strong>
-          <span>수업 · 알바처럼 매주 안 되는 시간</span>
+          <span>수업 · 알바등 반복되는 일정 | 유디 정규 연습은 표시할 필요 X</span>
         </div>
       ) : (
         <WeekNav weekStart={weekStart} isThisWeek={isThisWeek} onShift={shiftWeek} onToday={goToday} />
