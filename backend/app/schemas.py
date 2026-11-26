@@ -199,3 +199,47 @@ class PasswordChangeIn(BaseModel):
         if not re.fullmatch(r"[0-9]{4}", value.get_secret_value()):
             raise ValueError("비밀번호는 숫자 4자리로 입력해 주세요.")
         return value
+
+
+# ── 타임픽 ──
+class TimepickWeeklyCell(BaseModel):
+    """매주 칸 하나: 무슨 요일, 몇 시 칸인지"""
+    model_config = ConfigDict(from_attributes=True)
+
+    weekday: int = Field(ge=0, le=6)   # 0=일 … 6=토
+    start_time: time                   # 칸 시작 시각 ("16:30:00")
+
+    @field_validator("start_time")
+    @classmethod
+    def half_hour(cls, value: time) -> time:
+        # 칸은 30분 단위라 정각이나 30분만 받아요
+        if value.minute not in (0, 30) or value.second or value.microsecond:
+            raise ValueError("칸 시작 시각은 정각이나 30분이어야 해요.")
+        return value
+
+
+class TimepickDayCell(BaseModel):
+    """이 날만 바꾼 칸 하나"""
+    model_config = ConfigDict(from_attributes=True)
+
+    date_on: date
+    start_time: time
+    busy: bool        # True: 이 날만 안 됨 / False: 매주 칸을 이 날만 됨으로 덮기
+
+    @field_validator("start_time")
+    @classmethod
+    def half_hour(cls, value: time) -> time:
+        if value.minute not in (0, 30) or value.second or value.microsecond:
+            raise ValueError("칸 시작 시각은 정각이나 30분이어야 해요.")
+        return value
+
+
+class TimepickRead(BaseModel):
+    """한 사람의 타임픽 (GET /api/timepicks/me 가 돌려주는 모양)"""
+    weekly: list[TimepickWeeklyCell]
+    days: list[TimepickDayCell]
+
+
+class TeamTimepickRead(TimepickRead):
+    """팀 화면용: 누구의 타임픽인지 + 그 사람의 칸 (TimepickRead 를 물려받음)"""
+    member_id: int

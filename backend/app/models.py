@@ -187,3 +187,25 @@ class LoginSession(Base):
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
     expires_at: Mapped[datetime] = mapped_column(index=True)
+
+# 타임픽: 매주 반복되는 안 되는 칸 (수업, 알바 등)
+# 행이 있으면 = 그 요일 그 30분 칸은 매주 안 됨
+class TimepickWeekly(Base):
+    __tablename__ = "timepick_weekly"
+    __table_args__ = (CheckConstraint("weekday BETWEEN 0 AND 6", name="ck_tpw_weekday"),)
+
+    # 세 칸 모두 primary_key → 같은 칸이 두 번 저장될 수 없음
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), primary_key=True)
+    weekday: Mapped[int] = mapped_column(primary_key=True)      # 0=일, 1=월, ... 6=토 (시간표 블록과 같음)
+    start_time: Mapped[time] = mapped_column(primary_key=True)  # 칸 시작 시각 (30분 칸: 16:00, 16:30 …)
+
+# 타임픽: 이 날만 바꾼 칸
+#   busy=True  → 이 날만 안 됨
+#   busy=False → 매주 안 되는 칸인데 이 날만 됨 (휴강 등)
+class TimepickDay(Base):
+    __tablename__ = "timepick_days"
+
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), primary_key=True)
+    date_on: Mapped[date] = mapped_column(primary_key=True)     # 그 날짜
+    start_time: Mapped[time] = mapped_column(primary_key=True)  # 칸 시작 시각
+    busy: Mapped[bool]
