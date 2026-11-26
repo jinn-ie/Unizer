@@ -94,7 +94,7 @@ export function SchedulePage() {
           </li>
           <li>
             <span>
-              대회의실은 타동아리의 예약도 확인해주세요.{' '}
+              대회의실, 아라는 타동아리의 예약도 확인해주세요.{' '}
               <a
                 className="notice-link"
                 href="https://space.pusan.ac.kr/"
