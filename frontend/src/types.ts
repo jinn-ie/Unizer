@@ -5,7 +5,7 @@ export interface Reservation {
   song_id: number | null
   song_title: string | null
   title: string | null
-  space: string // "동방" | "바깥거울" | "대회의실1" | "대회의실2"
+  space: string // "동방" | "바깥거울" | "대회의실1" | "대회의실2" | "아라"
   start_at: string // "2026-11-18T19:00:00" (한국 시간, 타임존 없음)
   end_at: string
   created_at: string | null // 등록 시각 (예전 연습은 null)

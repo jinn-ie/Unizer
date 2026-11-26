@@ -18,7 +18,7 @@
   3. DB 복사본에서 `python -m app.migrate`를 두 번 돌려 두 번째는 건너뛰는지 확인해 주세요.
 - **`main`에 푸시하면 서버에 자동 배포돼요.** (GitHub Actions → `~/deploy.sh`) 그래서 푸시는 사용자가 요청할 때만 하고, 서버에 직접 접속하지 않아요.
 - **로컬 DB(`backend/unizer.db`)를 바꾸기 전에는 백업**(`*.bak`, git 제외됨)하고, 테스트는 되도록 DB 복사본에서 해요.
-- **공간 목록과 순서**는 `backend/app/models.py`의 `Space`와 `frontend/src/lib/spaces.ts`가 같아야 해요. (동방 → 바깥거울 → 대회의실1 → 대회의실2)
+- **공간 목록과 순서**는 `backend/app/models.py`의 `Space`와 `frontend/src/lib/spaces.ts`가 같아야 해요. (동방 → 바깥거울 → 대회의실1 → 대회의실2 → 아라)
 
 ## 작업 확인 방법
 

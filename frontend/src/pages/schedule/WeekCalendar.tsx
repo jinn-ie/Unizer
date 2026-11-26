@@ -36,7 +36,7 @@ interface Props {
   items: ScheduleItem[]
   now: Date
   onSelectDay: (day: Date, focusKey?: string) => void
-  // spaces: 날짜 칸을 공간 4줄로 나눔 ('연습 공간', 기본값)
+  // spaces: 날짜 칸을 공간 수만큼 세로줄로 나눔 ('연습 공간', 기본값)
   // single: 날짜마다 한 칸, 색으로 공간 구분 + 막대 안에 곡명 · 공간 (예전 '내 연습' 화면용, 지금은 쓰는 곳 없음)
   layout?: 'spaces' | 'single'
 }
@@ -98,7 +98,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
           startMin: (s - dayStart) / 60000,
           endMin: (e - dayStart) / 60000,
           space,
-          lane: space, // 공간 4줄 모드: 공간 번호 = 세로줄
+          lane: space, // 공간 줄 모드: 공간 번호 = 세로줄
           lanes: SPACES.length,
         })
       })
@@ -166,7 +166,8 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
   const nowMin = now.getHours() * 60 + now.getMinutes()
 
   return (
-    <div className={`cal${single ? ' is-single' : ''}`}>
+    // --spaces: 날짜 칸을 몇 줄로 나눌지 (공간 수). CSS 가 이 값으로 줄 너비를 계산해요
+    <div className={`cal${single ? ' is-single' : ''}`} style={{ '--spaces': SPACES.length } as CSSProperties}>
       <div className="cal-head">
         <div className="cal-corner" />
         {days.map((d, i) => {
@@ -180,7 +181,7 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
             >
               <span className="cal-dow">{WEEKDAYS[i]}</span>
               <span className="cal-date">{d.getDate()}</span>
-              {/* 공간 4줄 모드에서만: 날짜 아래 공간 색 줄 */}
+              {/* 공간 줄 모드에서만: 날짜 아래 공간 색 줄 */}
               {!single && (
                 <span className="cal-lane-key" aria-hidden>
                   {SPACES.map((s) => (
@@ -222,9 +223,9 @@ export function WeekCalendar({ weekStart, items, now, onSelectDay, layout = 'spa
                 className={`cal-day${isToday ? ' is-today' : ''}`}
                 onClick={() => onSelectDay(d)}
               >
-                {/* 공간 4줄 모드: 날짜 칸 양옆에 여백(--gut)을 두고, 그 안을 공간 4줄로 나눔 */}
+                {/* 공간 줄 모드: 날짜 칸 양옆에 여백(--gut)을 두고, 그 안을 공간 수만큼 나눔 (줄 사이 선 = 공간 수 - 1개) */}
                 {!single &&
-                  [1, 2, 3].map((n) => (
+                  Array.from({ length: SPACES.length - 1 }, (_, k) => k + 1).map((n) => (
                     <i key={n} className="cal-lane-line" style={{ '--lane': n } as CSSProperties} />
                   ))}
 
