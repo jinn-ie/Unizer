@@ -72,12 +72,6 @@ export function SchedulePage() {
     [load],
   )
 
-  const weekCount = useMemo(() => {
-    const s = weekStart.getTime()
-    const e = addDays(weekStart, 7).getTime()
-    return items.filter((it) => it.start.getTime() < e && it.end.getTime() > s).length
-  }, [items, weekStart])
-
   const notes = useMemo(() => (load.status === 'ready' ? load.notes : []), [load])
 
   const shiftWeek = useCallback((n: number) => setWeekStart((w) => addDays(w, 7 * n)), [])
@@ -156,18 +150,6 @@ export function SchedulePage() {
           </div>
         )}
       </main>
-
-      {load.status === 'ready' && (
-        <p className="week-summary">
-          {weekCount > 0 ? (
-            <>
-              이 주의 연습 <b>{weekCount}건</b> · 날짜를 누르면 연습을 추가할 수 있어요
-            </>
-          ) : (
-            '이 주에는 연습이 없어요'
-          )}
-        </p>
-      )}
 
       {sheet && (
         <DaySheet

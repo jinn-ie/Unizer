@@ -294,23 +294,15 @@ export function TimepickView({
   // 좌우로 밀어 주 이동은 팀 화면에서만 (나는 끌어서 칠하기와 헷갈려서 화살표로만)
   const swipe = useWeekSwipe(shiftWeek)
 
-  // 맨 아래 안내 줄
-  let summary: ReactNode
-  if (isTeam) {
-    if (selected) {
-      // 고른 칸은 표에 흰 테두리로 보이니, 여기는 안 되는 사람만 간단하게
-      const people = busyPeople(selected.col, selected.min)
-      summary =
-        people.length === 0
-          ? '모두 돼요'
-          : `안 되는 사람: ${people.map((p) => (p.practice ? `${p.name}(연습)` : p.name)).join(', ')}`
-    } else {
-      summary = `칸을 누르면 안 되는 사람이 보여요 · 칸 숫자는 되는 사람 수 · 팀원 ${teamMembers.length}명`
-    }
-  } else if (isWeekly) {
-    summary = "여기서 회색으로 바꾼 칸은 모든 주에 들어가요 · 한 날만 바꾸려면 '이 주만'에서"
-  } else {
-    summary = '안 되는 시간을 회색으로 바꿔요 · 톡 누르면 한 칸, 꾹 눌러 끌면 여러 칸'
+  // 맨 아래 줄: 팀 화면에서 고른 칸의 안 되는 사람 (안내 문구는 없어요)
+  let summary: ReactNode = null
+  if (isTeam && selected) {
+    // 고른 칸은 표에 흰 테두리로 보이니, 여기는 안 되는 사람만 간단하게
+    const people = busyPeople(selected.col, selected.min)
+    summary =
+      people.length === 0
+        ? '모두 돼요'
+        : `안 되는 사람: ${people.map((p) => (p.practice ? `${p.name}(연습)` : p.name)).join(', ')}`
   }
 
   return (
@@ -424,10 +416,13 @@ export function TimepickView({
         {overlay ?? teamOverlay}
       </main>
 
-      <p className="week-summary tp-summary">
-        {summary}
-        {saveLine}
-      </p>
+      {/* 보여줄 게 있을 때만 (고른 칸의 안 되는 사람 · 저장 상태) */}
+      {(summary || saveLine) && (
+        <p className="week-summary tp-summary">
+          {summary}
+          {saveLine}
+        </p>
+      )}
     </>
   )
 }
