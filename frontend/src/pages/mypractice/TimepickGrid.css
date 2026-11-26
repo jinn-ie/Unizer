@@ -1,0 +1,100 @@
+/* ── 타임픽 표 ───────────────────────── */
+/* 머리줄 · 시각 · 격자선은 WeekCalendar.css 의 .cal-… 를 같이 써요. */
+
+/* 칠하는 표: 손가락으로 누르는 동안 글자 선택 · 확대가 안 되게 */
+.tp-grid.is-paint .cal-body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 칠하는 중: 글자 선택 막기 (손가락이 표 밖으로 나가도) */
+body.tp-painting,
+body.tp-painting * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 매주 모드처럼 날짜가 없는 머리줄은 요일만 */
+.tp-grid .cal-day-head {
+  min-height: 32px;
+  justify-content: center;
+}
+
+/* 칸 하나: 격자선이 보이게 1px 씩 안쪽으로 (위아래 여백은 TimepickGrid 에서 계산) */
+.tp-cell {
+  position: absolute;
+  z-index: 2;
+  left: 1px;
+  right: 1px;
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+  pointer-events: none; /* 누르기는 날짜 칸(.cal-day)이 받아요 */
+}
+
+/* ── 나: 가능은 진한 청록 (팀의 '모두 됨'과 같은 색), 불가능은 회색 (매주 · 이 날만 구분 없이) ── */
+.tp-cell.is-free {
+  background: color-mix(in srgb, var(--teal) 85%, transparent);
+}
+
+.tp-cell.is-busy {
+  background: color-mix(in srgb, var(--gray) 40%, transparent);
+}
+
+/* ── 팀: 모두 안 되면 회색(.is-busy), 되는 사람이 많을수록 진한 청록 ── */
+/* 1~3단계: 일부만 됨 (되는 사람 비율) */
+.tp-cell.is-lv1 {
+  background: color-mix(in srgb, var(--teal) 16%, transparent);
+}
+
+.tp-cell.is-lv2 {
+  background: color-mix(in srgb, var(--teal) 32%, transparent);
+}
+
+.tp-cell.is-lv3 {
+  background: color-mix(in srgb, var(--teal) 50%, transparent);
+}
+
+/* 4단계: 모두 됨 */
+.tp-cell.is-lv4 {
+  background: color-mix(in srgb, var(--teal) 85%, transparent);
+}
+
+/* 유디 연습: 불가능 칸과 같은 회색 + 왼쪽 띠 + 곡명 (잠김) */
+.tp-block {
+  position: absolute;
+  z-index: 3;
+  left: 1px;
+  right: 1px;
+  padding: 3px 3px 2px 5px;
+  border-left: 3px solid var(--gray);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--gray) 40%, var(--surface));
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--white);
+  word-break: break-all;
+  pointer-events: none;
+}
+
+/* 팀 화면에서 고른 칸 */
+.tp-selected {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  border: 2px solid var(--white);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* 끄는 중인 직사각형 미리보기: 흰 테두리로 "여기가 칠해질 칸"을 표시 */
+.tp-cell.is-preview {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}

@@ -14,8 +14,8 @@ type Tab = 'schedule' | 'songs' | 'mine' | 'feedback' | 'account'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'schedule', label: '연습 공간' },
+  { key: 'mine', label: '타임픽' },
   { key: 'songs', label: '곡' },
-  { key: 'mine', label: '내 연습' },
   { key: 'feedback', label: '의견 보내기' },
 ]
 
@@ -89,7 +89,16 @@ export default function App() {
       {tab === 'songs' && <DataPage />}
       {/* 다른 부원으로 로그인하면 처음부터 다시 불러오게 key 로 구분 */}
       {tab === 'mine' && (
-        <MyPracticePage key={member?.id ?? 'guest'} member={member} onLogin={() => setTab('account')} />
+        <MyPracticePage
+          key={member?.id ?? 'guest'}
+          member={member}
+          onLogin={() => setTab('account')}
+          // 로그인이 풀렸으면(예전 쿠키 등) 로그아웃 상태로 바꾸고 로그인 화면으로
+          onSessionExpired={() => {
+            setMember(null)
+            setTab('account')
+          }}
+        />
       )}
       {tab === 'feedback' && <FeedbackPage />}
       {tab === 'account' && member && <MyPage member={member} onLogout={() => setMember(null)} />}

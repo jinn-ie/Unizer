@@ -17,7 +17,7 @@ import {
 } from '../../lib/schedule'
 import './WeekCalendar.css'
 
-// 시간 범위(08:00~24:00, 처음엔 16:00부터)는 lib/schedule.ts 에서 마이페이지와 같이 써요.
+// 시간 범위(08:00~24:00, 처음엔 16:00부터)는 lib/schedule.ts 에서 타임픽 표와 같이 써요.
 const MIN_ROW_PX = 18
 const MAX_ROW_PX = 44
 
@@ -37,7 +37,7 @@ interface Props {
   now: Date
   onSelectDay: (day: Date, focusKey?: string) => void
   // spaces: 날짜 칸을 공간 4줄로 나눔 ('연습 공간', 기본값)
-  // single: 날짜마다 한 칸, 색으로 공간 구분 + 막대 안에 곡명 · 공간 ('내 연습')
+  // single: 날짜마다 한 칸, 색으로 공간 구분 + 막대 안에 곡명 · 공간 (예전 '내 연습' 화면용, 지금은 쓰는 곳 없음)
   layout?: 'spaces' | 'single'
 }
 

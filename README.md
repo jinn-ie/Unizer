@@ -94,19 +94,19 @@ frontend/
 | 기능 | 화면(탭) | 프론트 | 백엔드 | 테이블 | 담당 |
 |---|---|---|---|---|---|
 | **연습 공간** — 주간 캘린더, 연습 등록·수정·삭제, 날짜별 메모 | 연습 공간 | `pages/schedule/` | `routers/reservations.py`<br>`routers/notes.py`<br>`services/conflicts.py` | `reservations`<br>`notes` | jinn-ie |
+| **타임픽** — 안 되는 시간을 30분 칸으로 칠함 (가능 청록 / 불가능 회색, 꾹 눌러 끌면 직사각형). 매주 반복 / 이 주만, 칠하면 자동 저장. 내 유디 연습(내 곡의 연습 + 내게 해당하는 공통 일정: 의돌·신돌은 전체, 돌리기·기본기는 연도−1984기·연도−1983기)은 곡명이 든 회색 막대로 자동 표시(잠김). 리더는 내가 리더인 곡의 팀원 전체를 겹쳐 봄 (로그인 필요) | 타임픽 | `pages/mypractice/` (`MyPracticePage` 불러오기 · 자동 저장, `TimepickView`, `TimepickGrid`, 칸 규칙 · 서버 모양 변환 `timepick.ts`, 연습 고르는 규칙 `memberPractice.ts`)<br>`pages/schedule/` 의 `WeekNav` 를 같이 씀 | `routers/timepicks.py`<br>`routers/reservations.py`<br>`routers/songs.py` | `timepick_weekly`<br>`timepick_days`<br>`reservations`<br>`song_members` | |
 | **곡** — 곡 목록, 붙여넣기로 곡 등록, 시간표 등록·수정·삭제 | 곡 | `pages/data/` (`DataPage`, `SongImport`, `TimetableBuilder`) | `routers/songs.py`<br>`routers/timetables.py`<br>`services/timetables.py`<br>`song_import.py` | `songs`<br>`song_members`<br>`timetables`<br>`timetable_slots` | jinn-ie |
-| **내 연습** — 내가 멤버인 곡의 연습 + 내게 해당하는 공통 일정(의돌·신돌은 전체, 돌리기·기본기는 연도−1984기·연도−1983기)을 주별 시간표로 (로그인 필요) | 내 연습 | `pages/mypractice/` (`MyPracticePage`)<br>`pages/schedule/` 의 `WeekCalendar`, `WeekNav`, `DaySheet` 를 같이 씀 | `routers/reservations.py`<br>`routers/songs.py` | `reservations`<br>`song_members` | |
 | **의견 보내기** | 의견 보내기 | `pages/feedback/` | `routers/feedback.py` | `feedbacks` | jinn-ie |
 | **로그인** — 기수·이름(+ 숫자 4자리 비밀번호)으로 로그인, 로그인 상태 확인 | 상단 로그인 | `pages/auth/` | `routers/auth.py`, `member_password.py` | `members.password_hash`<br>`login_sessions` | |
-| **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경, 내 정규 일정(지금은 빈 시간표) | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`, `MyTimetable`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |
+| **마이페이지** — 내 정보, 로그아웃, 비밀번호 설정·변경 | 상단 사람 아이콘 + ㅇㅇㅇ님 | `pages/mypage/` (`MyPage`, `PasswordForm`) | `routers/auth.py` | `members.password_hash`<br>`login_sessions` | |
 
 새 기능을 만들면 이 표에 한 줄 추가해 주세요.
 
 ### 부원 로그인
 
-등록된 기수와 이름으로 로그인해요. 비밀번호는 `members.password_hash`에 해시로 저장하고, 값이 비어 있으면(`NULL`) 기수와 이름만으로 로그인해요. 비밀번호는 **숫자 4자리**로 정해져 있고, 비밀번호가 있는 부원은 로그인할 때 비밀번호도 입력해요. 기수와 이름만으로 로그인하는 계정은 명단을 아는 사람도 사용할 수 있어요. 로그인 상태는 브라우저에서 7일간 유지되며, 기존 화면은 로그인 없이 이용할 수 있어요.
+등록된 기수와 이름으로 로그인해요. 비밀번호는 `members.password_hash`에 해시로 저장하고, 값이 비어 있으면(`NULL`) 기수와 이름만으로 로그인해요. 비밀번호는 **숫자 4자리**로 정해져 있고, 비밀번호가 있는 부원은 로그인할 때 비밀번호도 입력해요. 기수와 이름만으로 로그인하는 계정은 명단을 아는 사람도 사용할 수 있어요. 로그인 상태는 브라우저에서 180일간 유지되며, 기존 화면은 로그인 없이 이용할 수 있어요.
 
-로그인하면 상단 버튼이 사람 아이콘 + **ㅇㅇㅇ님**으로 바뀌고, 누르면 **마이페이지**로 들어가요. 마이페이지에서 비밀번호를 직접 설정하거나 바꿀 수 있어요. 그 아래 **내 정규 일정**(학교 수업, 알바처럼 매주 반복되는 일정)은 지금은 빈 주간 시간표이고, 시간 범위는 '연습 공간'과 같아요. (`lib/schedule.ts`의 `CAL_…` 값을 같이 써요.)
+로그인하면 상단 버튼이 사람 아이콘 + **ㅇㅇㅇ님**으로 바뀌고, 누르면 **마이페이지**로 들어가요. 마이페이지에서 비밀번호를 직접 설정하거나 바꿀 수 있어요.
 
 - 비밀번호가 없으면 새 비밀번호만 입력해 바로 설정해요. 그래서 먼저 로그인한 다른 사람이 대신 설정할 수도 있어요. 그런 일이 생기면 운영자가 아래 `--clear` 명령으로 풀어 줘요.
 - 비밀번호가 있으면 현재 비밀번호가 맞아야 바꿀 수 있어요.
