@@ -14,13 +14,27 @@ import type {
   ShowInput,
   Song,
   SongMember,
+  TeamTimepick,
+  TimepickData,
+  TimepickDayCell,
+  TimepickWeeklyCell,
   Timetable,
   TimetableInput,
 } from './types'
 
+// 서버가 오류로 답했을 때: 문구 + HTTP 상태 번호 (401 = 로그인 필요, 403 = 권한 없음 …)
+// 화면에서 상태 번호에 따라 안내를 다르게 할 수 있게 같이 담아 둬요.
+export class HttpError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`)
+  if (!res.ok) throw new HttpError(`${url} → HTTP ${res.status}`, res.status)
   return res.json()
 }
 
@@ -55,7 +69,7 @@ async function sendJson<T>(url: string, method: string, body?: unknown): Promise
   if (!res.ok) {
     const data = await res.json().catch(() => null)
     const detail = typeof data?.detail === 'string' ? data.detail : '입력한 내용을 다시 확인해 주세요.'
-    throw new Error(detail)
+    throw new HttpError(detail, res.status)
   }
   if (res.status === 204) return undefined as T // 삭제 성공: 돌려줄 내용 없음
   return res.json()
@@ -161,4 +175,25 @@ export function fetchPasswordStatus(signal?: AbortSignal) {
 // 설정 · 변경 둘 다 이 함수로 해요. 성공하면 다른 기기의 로그인이 풀려요.
 export function changePassword(input: PasswordChangeInput) {
   return sendJson<void>('/api/auth/password', 'PUT', input)
+}
+
+// ── 타임픽 ──
+// 내가 칠한 칸 전부 (매주 칸 + 이 날만 칸)
+export function fetchMyTimepick(signal?: AbortSignal) {
+  return getJson<TimepickData>('/api/timepicks/me', signal)
+}
+
+// 매주 칸을 통째로 바꾸기
+export function saveWeeklyTimepick(cells: TimepickWeeklyCell[]) {
+  return sendJson<void>('/api/timepicks/me/weekly', 'PUT', cells)
+}
+
+// 그 주(일요일 ~ 토요일)의 이 날만 칸을 통째로 바꾸기. weekStart = 그 주 일요일 "2026-11-29"
+export function saveWeekTimepickDays(weekStart: string, cells: TimepickDayCell[]) {
+  return sendJson<void>(`/api/timepicks/me/days/${weekStart}`, 'PUT', cells)
+}
+
+// 팀 화면: 그 곡 팀원 전원의 칠한 칸 (그 곡의 리더만, 아니면 403)
+export function fetchTeamTimepick(songId: number, signal?: AbortSignal) {
+  return getJson<TeamTimepick[]>(`/api/timepicks/songs/${songId}`, signal)
 }

@@ -173,3 +173,27 @@ export interface PasswordChangeInput {
   current_password?: string
   new_password: string
 }
+
+// ── 타임픽 (백엔드 schemas.py 의 TimepickWeeklyCell / TimepickDayCell / TimepickRead / TeamTimepickRead) ──
+// 칸 하나 = 30분. start_time 은 칸 시작 시각 "16:30:00"
+export interface TimepickWeeklyCell {
+  weekday: number // 0=일 … 6=토
+  start_time: string
+}
+
+export interface TimepickDayCell {
+  date_on: string // "2026-12-02"
+  start_time: string
+  busy: boolean // true: 이 날만 안 됨 / false: 매주 칸을 이 날만 됨으로 덮기
+}
+
+// 한 사람의 타임픽 (GET /api/timepicks/me)
+export interface TimepickData {
+  weekly: TimepickWeeklyCell[]
+  days: TimepickDayCell[]
+}
+
+// 팀 화면: 누구의 타임픽인지 + 그 사람의 칸 (GET /api/timepicks/songs/{song_id})
+export interface TeamTimepick extends TimepickData {
+  member_id: number
+}
