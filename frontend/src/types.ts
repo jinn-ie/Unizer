@@ -11,6 +11,10 @@ export interface Reservation {
   created_at: string | null // 등록 시각 (예전 연습은 null)
   updated_at: string | null // 마지막 수정 시각 (수정한 적 없으면 null)
   slot_id: number | null // 시간표로 만든 연습이면 그 블록 번호
+  // 등록한 부원 (번호 + 이름). 예전 연습 · 시간표로 만든 연습은 null
+  // 백엔드가 아직 이 값을 안 보내면 undefined → 등록자 없음으로 취급
+  created_by?: number | null
+  created_by_name?: string | null
   // 개인 보충 여부 + 함께하는 부원 (리더 포함). 단체 연습이면 false / []
   // 백엔드가 아직 이 값을 안 보내면 undefined → 단체로 취급
   personal?: boolean
@@ -32,6 +36,8 @@ export interface Member {
   id: number
   gen: number // 기수 (42, 43 …)
   name: string
+  // 관리자 여부 (지금은 42기 이서진만). /api/auth/me 에서만 와요.
+  is_admin?: boolean
 }
 
 export interface Song {

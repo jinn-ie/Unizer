@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchNotes, fetchReservations } from '../../api'
-import type { Note, Reservation } from '../../types'
+import type { Member, Note, Reservation } from '../../types'
 import { SPACES } from '../../lib/spaces'
 import {
   addDays,
@@ -27,7 +27,12 @@ function initialWeek(): Date {
   return startOfWeek((param && parseDateKey(param)) || new Date())
 }
 
-export function SchedulePage() {
+interface Props {
+  member: Member | null // 로그인한 부원 (로그인 전이면 null)
+  onLogin: () => void // 로그인 화면으로 가기
+}
+
+export function SchedulePage({ member, onLogin }: Props) {
   const [weekStart, setWeekStart] = useState(initialWeek)
   const [load, setLoad] = useState<LoadState>({ status: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
@@ -171,6 +176,8 @@ export function SchedulePage() {
           focusKey={sheet.focusKey}
           items={items}
           notes={notes.filter((n) => n.date_on === toDateKey(sheet.day))}
+          member={member}
+          onLogin={onLogin}
           onClose={() => setSheet(null)}
           onChanged={(focusKey) => {
             // 추가/수정/삭제 후 다시 불러오고, 바뀐 연습을 목록에서 강조
