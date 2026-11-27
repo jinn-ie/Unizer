@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { fetchMembers, fetchReservations, fetchShows, fetchSongMembers, fetchSongs, fetchTimetables } from '../../api'
 import type { Member, Reservation, Show, Song, SongMember, Timetable } from '../../types'
 import { parseDateKey, parseLocal, toDateKey } from '../../lib/date'
+import { isAdmin } from '../../lib/permissions'
 import { Toast } from '../../components/Toast'
 import { ShowCreate } from './ShowCreate'
 import { ShowSheet } from './ShowSheet'
@@ -48,7 +49,12 @@ interface SongGroup {
 
 // 곡 탭: [곡 등록 | 공연 만들기] 버튼 + 공연별 토글 안에 곡 칩(누르면 인원·예정 연습·멤버) / 시간표 목록 · 생성
 // (부원 목록은 곡 멤버 이름을 보여주는 데 써요)
-export function DataPage() {
+interface Props {
+  member: Member | null // 로그인한 부원 (로그인 전이면 null)
+  onLogin: () => void // 로그인 화면으로 가기
+}
+
+export function DataPage({ member, onLogin }: Props) {
   // 펼친 곡 칩 (한 번에 하나). 한 곡이 여러 공연에 있을 수 있어서 "토글 키:곡 번호"로 구분
   const [openSongKey, setOpenSongKey] = useState<string | null>(null)
   // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 접힌 채로 시작
@@ -352,11 +358,12 @@ export function DataPage() {
           </ul>
         )}
 
+        {/* 시간표 생성은 로그인한 사람만 (연습이 한꺼번에 등록돼서). 로그인 전이면 로그인 화면으로 */}
         <button
           type="button"
           className="tt-open-btn"
-          onClick={() => setBuilder({ mode: 'new' })}
-          disabled={songs.length === 0}
+          onClick={() => (member ? setBuilder({ mode: 'new' }) : onLogin())}
+          disabled={!!member && songs.length === 0}
         >
           <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
             <rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -368,7 +375,7 @@ export function DataPage() {
               strokeLinecap="round"
             />
           </svg>
-          시간표 생성
+          {member ? '시간표 생성' : '로그인하고 시간표 생성'}
         </button>
       </section>
 
@@ -376,6 +383,8 @@ export function DataPage() {
         <TimetableBuilder
           songs={load.songs}
           timetable={builder.mode === 'edit' ? builder.timetable : undefined}
+          // 이미 있는 시간표 수정 · 삭제는 관리자만. 다른 부원은 보기만 해요.
+          readOnly={builder.mode === 'edit' && !isAdmin(member)}
           onClose={() => setBuilder(null)}
           onSaved={(saved, mode) => {
             setBuilder(null)

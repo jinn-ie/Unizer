@@ -81,6 +81,8 @@ interface Press {
 interface Props {
   songs: Song[]
   timetable?: Timetable // 있으면 수정 모드 (저장된 블록이 채워진 채로 시작)
+  // true 면 보기만 (끌기 · 입력 · 저장 · 삭제 없음). 시간표 수정 · 삭제는 관리자만 할 수 있어서
+  readOnly?: boolean
   onClose: () => void
   onSaved: (saved: Timetable, mode: 'created' | 'updated') => void
   onDeleted: (name: string) => void
@@ -194,7 +196,7 @@ function findTarget(
 
 // 시간표 생성 / 수정: 이름 · 기간 + 주간 표. 곡 칩을 꾹 눌러 표에 끌어다 놓으면 2시간 · 동방으로 들어감
 // 이미 놓인 곡과 시간이 겹치면 칸을 세로로 반 나누고, 새 곡은 바깥거울로 (한 시간대엔 최대 2곡)
-export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted }: Props) {
+export function TimetableBuilder({ songs, timetable, readOnly = false, onClose, onSaved, onDeleted }: Props) {
   const editing = !!timetable
   // 처음 값 (수정 모드면 저장된 시간표). 닫을 때 바뀐 게 있는지 비교하려고 snap 도 같이
   const [init] = useState(() => {
@@ -403,6 +405,7 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
     e: ReactPointerEvent<HTMLElement>,
     make: (x: number, y: number) => Omit<Drag, 'pointerId' | 'x' | 'y'>,
   ) => {
+    if (readOnly) return // 보기 전용: 꾹 눌러 끌기 없음
     if (e.pointerType === 'mouse' && e.button !== 0) return
     if (dragRef.current) return
     draggedRef.current = false
@@ -516,7 +519,7 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
     <div className="tb-root" role="dialog" aria-modal aria-label={editing ? '시간표 수정' : '시간표 생성'}>
       <div className="tb">
         <header className="tb-head">
-          <h2>{editing ? '시간표 수정' : '시간표 생성'}</h2>
+          <h2>{readOnly ? '시간표 보기' : editing ? '시간표 수정' : '시간표 생성'}</h2>
           <button type="button" className="tb-close" onClick={close} aria-label="닫기">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -532,6 +535,7 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
             placeholder="시간표 이름 (예: 2026 버스킹 2차곡)"
             maxLength={100}
             aria-label="시간표 이름"
+            readOnly={readOnly}
           />
           <div className="tb-period">
             <input
@@ -539,6 +543,7 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
               value={period.startsOn}
               onChange={(e) => setPeriod((p) => ({ ...p, startsOn: e.target.value }))}
               aria-label="시작일"
+              readOnly={readOnly}
             />
             <span className="tb-tilde">~</span>
             <input
@@ -547,46 +552,54 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
               min={period.startsOn}
               onChange={(e) => setPeriod((p) => ({ ...p, endsOn: e.target.value }))}
               aria-label="종료일"
+              readOnly={readOnly}
             />
             <span className={`tb-weeks${periodLabel ? '' : ' is-bad'}`}>{periodLabel ?? '기간 오류'}</span>
           </div>
-          {init.started && <p className="tb-note">이미 시작한 시간표예요. 고치거나 지우면 지난 날짜의 연습도 같이 바뀌어요.</p>}
+          {init.started && !readOnly && (
+            <p className="tb-note">이미 시작한 시간표예요. 고치거나 지우면 지난 날짜의 연습도 같이 바뀌어요.</p>
+          )}
         </div>
 
-        <div className="tb-tray" aria-label="곡 · 일정 (꾹 눌러서 표로 끌기)">
-          {chips.map((c) => {
-            const n = countByChip.get(c.key) ?? 0
-            const lifted = drag?.source.kind === 'chip' && drag.source.chipKey === c.key
-            return (
-              <button
-                key={c.key}
-                type="button"
-                className={`tb-chip${c.preset ? ' is-preset' : ''}${lifted ? ' is-lifted' : ''}${n ? ' is-placed' : ''}`}
-                onPointerDown={(e) =>
-                  startPress(e, () => ({
-                    source: { kind: 'chip', chipKey: c.key, songId: c.songId, title: c.title },
-                    len: DEFAULT_LEN,
-                    grab: SLOT / 2, // 손가락이 있는 칸에서 시작
-                    label: c.label,
-                    color: spaceInfo(DEFAULT_SPACE).color,
-                    prefer: DEFAULT_SPACE,
-                    exclude: null,
-                  }))
-                }
-                onClick={() => {
-                  if (!draggedRef.current) setHintFlash((k) => k + 1)
-                }}
-                onContextMenu={(e) => e.preventDefault()}
-              >
-                {c.label}
-                {n > 0 && <b>{n}</b>}
-              </button>
-            )
-          })}
-        </div>
-        <p key={hintFlash} className={`tb-hint${hintFlash ? ' is-flash' : ''}`}>
-          칩을 <b>꾹 눌러서</b> 표에 놓기 · 2시간 · 동방 (겹치면 바깥거울)
-        </p>
+        {/* 곡 칩 줄 · 안내문: 보기 전용이면 놓을 일이 없으니 숨김 */}
+        {!readOnly && (
+          <>
+            <div className="tb-tray" aria-label="곡 · 일정 (꾹 눌러서 표로 끌기)">
+              {chips.map((c) => {
+                const n = countByChip.get(c.key) ?? 0
+                const lifted = drag?.source.kind === 'chip' && drag.source.chipKey === c.key
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    className={`tb-chip${c.preset ? ' is-preset' : ''}${lifted ? ' is-lifted' : ''}${n ? ' is-placed' : ''}`}
+                    onPointerDown={(e) =>
+                      startPress(e, () => ({
+                        source: { kind: 'chip', chipKey: c.key, songId: c.songId, title: c.title },
+                        len: DEFAULT_LEN,
+                        grab: SLOT / 2, // 손가락이 있는 칸에서 시작
+                        label: c.label,
+                        color: spaceInfo(DEFAULT_SPACE).color,
+                        prefer: DEFAULT_SPACE,
+                        exclude: null,
+                      }))
+                    }
+                    onClick={() => {
+                      if (!draggedRef.current) setHintFlash((k) => k + 1)
+                    }}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    {c.label}
+                    {n > 0 && <b>{n}</b>}
+                  </button>
+                )
+              })}
+            </div>
+            <p key={hintFlash} className={`tb-hint${hintFlash ? ' is-flash' : ''}`}>
+              칩을 <b>꾹 눌러서</b> 표에 놓기 · 2시간 · 동방 (겹치면 바깥거울)
+            </p>
+          </>
+        )}
 
         <div className="tb-grid">
           <div className="tb-grid-head">
@@ -657,7 +670,7 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
                               }
                               onClick={(e) => {
                                 e.stopPropagation()
-                                if (draggedRef.current) return
+                                if (readOnly || draggedRef.current) return // 보기 전용: 블록 편집 창 안 열림
                                 setSelectedKey((k) => (k === b.key ? null : b.key))
                                 setTimeOpen(false)
                               }}
@@ -768,6 +781,14 @@ export function TimetableBuilder({ songs, timetable, onClose, onSaved, onDeleted
                 </button>
               ))}
             </div>
+          </div>
+        ) : readOnly ? (
+          // 보기 전용: 저장 · 삭제 대신 안내 + 닫기
+          <div className="tb-foot">
+            <p className="tb-readonly">시간표 수정 · 삭제는 관리자만 할 수 있어요.</p>
+            <button type="button" className="tb-cancel" onClick={close}>
+              닫기
+            </button>
           </div>
         ) : (
           <div className="tb-foot">

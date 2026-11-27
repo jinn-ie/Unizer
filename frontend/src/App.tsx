@@ -86,9 +86,9 @@ export default function App() {
         ))}
       </nav>
 
-      {/* 연습은 로그인한 사람만 등록하고, 등록한 사람(과 관리자)만 고칠 수 있어요. */}
+      {/* 연습 · 시간표는 로그인한 사람만 등록하고, 등록한 사람(과 관리자)만 고칠 수 있어요. */}
       {tab === 'schedule' && <SchedulePage member={member} onLogin={() => setTab('account')} />}
-      {tab === 'songs' && <DataPage />}
+      {tab === 'songs' && <DataPage member={member} onLogin={() => setTab('account')} />}
       {/* 다른 부원으로 로그인하면 처음부터 다시 불러오게 key 로 구분 */}
       {tab === 'mine' && (
         <MyPracticePage
