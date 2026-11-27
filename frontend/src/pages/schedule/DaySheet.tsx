@@ -26,7 +26,7 @@ interface Props {
   onChanged: (focusKey?: string) => void // 추가/수정/삭제 후 다시 불러오기
 }
 
-/** 등록한 사람 이름. 시간표로 만든 연습은 '시간표', 예전 연습은 없음(null) */
+/** 등록한 사람 이름. 등록자가 없으면 시간표로 만든 일정(기본기 등)은 '시간표', 예전 일정은 없음(null) */
 function creatorLabel(r: Reservation): string | null {
   if (r.created_by_name) return r.created_by_name
   if (r.slot_id != null) return '시간표'

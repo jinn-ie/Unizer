@@ -11,7 +11,7 @@ export interface Reservation {
   created_at: string | null // 등록 시각 (예전 연습은 null)
   updated_at: string | null // 마지막 수정 시각 (수정한 적 없으면 null)
   slot_id: number | null // 시간표로 만든 연습이면 그 블록 번호
-  // 등록한 부원 (번호 + 이름). 예전 연습 · 시간표로 만든 연습은 null
+  // 등록한 부원 (번호 + 이름). 시간표 · 예전 곡 연습은 그 곡의 리더, 곡이 아닌 일정은 null일 수 있음
   // 백엔드가 아직 이 값을 안 보내면 undefined → 등록자 없음으로 취급
   created_by?: number | null
   created_by_name?: string | null
