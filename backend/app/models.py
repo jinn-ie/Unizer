@@ -22,6 +22,11 @@ class Space(enum.StrEnum):
     CONF_ROOM_2 = "대회의실2"
     ARA = "아라"
 
+# 관리자 (기수, 이름). 남이 등록한 연습 · 메모, 시간표 수정 · 삭제를 할 수 있어요.
+# 지금은 한 명이라 코드에 적어 둬요. (서버 DB 와 로컬 DB 의 id 가 달라서 id 대신 기수 + 이름으로)
+# 관리자가 늘어나면 members 테이블에 칸을 만드는 게 좋아요.
+ADMINS = {(42, "이서진")}
+
 class Member(Base):
     __tablename__ = "members"
     __table_args__ = (UniqueConstraint("gen", "name", name="uq_member_gen_name"),)
@@ -31,6 +36,10 @@ class Member(Base):
     name: Mapped[str] = mapped_column(String(30))
     # 로그인 비밀번호 해시예요. None이면 비밀번호 없이 기수 + 이름으로 로그인해요.
     password_hash: Mapped[str | None] = mapped_column(String(96), default=None)
+
+    @property
+    def is_admin(self) -> bool:
+        return (self.gen, self.name) in ADMINS
 
 class Song(Base):
     __tablename__ = "songs"
@@ -136,8 +145,12 @@ class Reservation(Base):
     # 시간표 블록으로 만든 연습이면 그 블록 번호, 직접 잡은 연습이면 None
     # (블록을 지울 땐 BE 에서 연습을 먼저 지움. SET NULL 은 혹시 남은 연습이 고아가 되지 않게 하는 안전장치)
     slot_id: Mapped[int | None] = mapped_column(ForeignKey("timetable_slots.id", ondelete="SET NULL"))
-    personal: Mapped[bool] = mapped_column(default=False)      # 개인 보충이면 True (단체 연습은 False)    
+    personal: Mapped[bool] = mapped_column(default=False)      # 개인 보충이면 True (단체 연습은 False)
+    # 등록한 부원. 이 사람(과 관리자)만 수정 · 삭제할 수 있어요.
+    # 이 칸이 생기기 전의 연습 · 시간표로 만든 연습은 None → 관리자만 고칠 수 있어요.
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("members.id"))
     song: Mapped["Song | None"] = relationship(lazy="joined")
+    creator: Mapped["Member | None"] = relationship(lazy="joined")  # 등록자 (이름을 화면에 보내려고)
 
     # 개인 보충에 함께하는 부원 (리더 포함). 연습을 지우면 같이 지워짐
     # lazy="selectin": 연습 목록을 불러올 때 연결 줄을 한 번에 모아서 가져옴 (연습마다 따로 묻지 않게)
@@ -148,6 +161,11 @@ class Reservation(Base):
     @property
     def song_title(self) -> str | None:
         return self.song.title if self.song else None
+
+    @property
+    def created_by_name(self) -> str | None:
+        """화면에 보낼 등록자 이름 (등록자를 모르면 None)"""
+        return self.creator.name if self.creator else None
 
     @property
     def member_ids(self) -> list[int]:

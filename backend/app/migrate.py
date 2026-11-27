@@ -69,10 +69,19 @@ def add_reservation_personal(conn) -> bool:
     conn.execute(text("ALTER TABLE reservations ADD COLUMN personal BOOLEAN NOT NULL DEFAULT 0"))
     return True
 
+def add_reservation_created_by(conn) -> bool:
+    """2026-11-27 reservations.created_by 추가 (연습을 등록한 부원)"""
+    if has_column(conn, "reservations", "created_by"):
+        return False                       # 이미 있음 → 건너뜀
+    # 이미 있던 연습은 누가 등록했는지 모르니 비워 둠 (NULL) → 관리자만 고칠 수 있음
+    conn.execute(text("ALTER TABLE reservations ADD COLUMN created_by INTEGER REFERENCES members(id)"))
+    return True
+
 STEPS = [
     # add_reservation_memo,
     move_passwords_to_members,
     add_reservation_personal,
+    add_reservation_created_by,
 ]
 
 
