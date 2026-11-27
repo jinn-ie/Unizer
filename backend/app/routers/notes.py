@@ -8,11 +8,18 @@ from app.database import get_db
 from app.models import Note
 from app.routers.auth import SessionCookie, logged_in_member
 from app.schemas import NoteIn, NoteRead
+from app.services.activity import log, short_date
 
 # prefix: 이 파일의 모든 경로 앞에 자동으로 붙음
 # tags:   /docs 화면에서 API를 묶어 보여줄 이름
 # 보기는 누구나, 남기기는 로그인한 사람, 지우기는 남긴 본인과 관리자만 (연습과 같은 규칙)
 router = APIRouter(prefix="/api/notes", tags=["메모"])
+
+
+def note_summary(note: Note) -> str:
+    """활동 기록용 요약: "11/30(일) · 아라 사용할래" (길면 앞 40자만)"""
+    text = note.text if len(note.text) <= 40 else note.text[:40] + "…"
+    return f"{short_date(note.date_on)} · {text}"
 
 
 @router.get("", response_model=list[NoteRead])          # → GET /api/notes
@@ -26,6 +33,7 @@ def create_note(data: NoteIn, db: Annotated[Session, Depends(get_db)], token: Se
     member = logged_in_member(db, token)  # 누가 남겼는지 보여줘야 해서 로그인 필요
     note = Note(**data.model_dump(), created_by=member.id)
     db.add(note)
+    log(db, member, "메모", "등록", note_summary(note))
     db.commit()
     db.refresh(note)
     return note
@@ -40,5 +48,6 @@ def delete_note(note_id: int, db: Annotated[Session, Depends(get_db)], token: Se
     # 작성자가 없는 예전 메모는 created_by 가 None 이라 관리자만 통과
     if not member.is_admin and note.created_by != member.id:
         raise HTTPException(403, "남긴 사람만 지울 수 있어요.")
+    log(db, member, "메모", "삭제", note_summary(note))  # 지우기 전에 요약을 만들어 둬요
     db.delete(note)
     db.commit()

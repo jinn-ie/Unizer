@@ -5,9 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Timetable, TimetableSlot
+from app.models import Member, Timetable, TimetableSlot
 from app.routers.auth import SessionCookie, logged_in_member
 from app.schemas import TimetableIn, TimetableRead
+from app.services.activity import change_summary, log, period_summary
 from app.services.timetables import check_timetable, clear_slots, generate
 
 # 시간표 (곡 블록을 기간 동안 요일마다 반복 → 연습으로 저장)
@@ -17,10 +18,12 @@ from app.services.timetables import check_timetable, clear_slots, generate
 router = APIRouter(prefix="/api/timetables", tags=["시간표"])
 
 
-def check_admin(db: Session, token: str | None) -> None:
-    """관리자가 아니면 403 (로그인 안 했으면 401)"""
-    if not logged_in_member(db, token).is_admin:
+def check_admin(db: Session, token: str | None) -> Member:
+    """관리자가 아니면 403 (로그인 안 했으면 401). 관리자를 돌려줘요 (활동 기록용)"""
+    member = logged_in_member(db, token)
+    if not member.is_admin:
         raise HTTPException(403, "시간표 수정 · 삭제는 관리자만 할 수 있어요.")
+    return member
 
 
 def get_or_404(db: Session, tt_id: int) -> Timetable:
@@ -43,7 +46,7 @@ def get_timetable(tt_id: int, db: Annotated[Session, Depends(get_db)]):
 @router.post("", response_model=TimetableRead, status_code=201)          # → POST /api/timetables
 def create_timetable(data: TimetableIn, db: Annotated[Session, Depends(get_db)], token: SessionCookie = None):
     """시간표 + 블록 저장하고, 블록마다 연습 만들기. 하나라도 겹치면 전부 저장 안 함"""
-    logged_in_member(db, token)                    # 로그인만 확인 (안 했으면 401)
+    member = logged_in_member(db, token)           # 로그인만 확인 (안 했으면 401)
     check_timetable(db, data)
     tt = Timetable(
         name=data.name, starts_on=data.starts_on, ends_on=data.ends_on,
@@ -51,8 +54,8 @@ def create_timetable(data: TimetableIn, db: Annotated[Session, Depends(get_db)],
     )
     db.add(tt)
     db.flush()                                     # 블록 id 가 생겨야 연습에 slot_id 를 넣을 수 있음
-    for slot in tt.slots:
-        generate(db, tt, slot)
+    made = sum(generate(db, tt, slot) for slot in tt.slots)
+    log(db, member, "시간표", "등록", f"{period_summary(tt.name, tt.starts_on, tt.ends_on)} · 연습 {made}건")
     db.commit()
     db.refresh(tt)
     return tt
@@ -63,9 +66,10 @@ def update_timetable(
     tt_id: int, data: TimetableIn, db: Annotated[Session, Depends(get_db)], token: SessionCookie = None
 ):
     """바뀐 블록(또는 기간이 바뀌면 전부)의 연습을 지우고 다시 만들기. 안 바뀐 블록의 연습은 그대로"""
-    check_admin(db, token)
+    member = check_admin(db, token)
     tt = get_or_404(db, tt_id)
     check_timetable(db, data)
+    before = period_summary(tt.name, tt.starts_on, tt.ends_on)  # 기록용: 고치기 전 이름 · 기간
     period_changed = (tt.starts_on, tt.ends_on) != (data.starts_on, data.ends_on)
     tt.name, tt.starts_on, tt.ends_on = data.name, data.starts_on, data.ends_on
 
@@ -97,8 +101,11 @@ def update_timetable(
             to_generate.append(slot)
 
     db.flush()
+    made = 0
     for slot in to_generate:                       # 지운 뒤에 만들어서, 자기 옛 연습과는 겹침으로 안 잡힘
-        generate(db, tt, slot)
+        made += generate(db, tt, slot)
+    after = period_summary(tt.name, tt.starts_on, tt.ends_on)
+    log(db, member, "시간표", "수정", f"{change_summary(before, after)} · 다시 만든 연습 {made}건")
     db.commit()
     db.refresh(tt)
     return tt
@@ -107,8 +114,9 @@ def update_timetable(
 @router.delete("/{tt_id}", status_code=204)                              # → DELETE /api/timetables/{id}
 def delete_timetable(tt_id: int, db: Annotated[Session, Depends(get_db)], token: SessionCookie = None):
     """시간표 삭제: 그 시간표로 만든 연습도 전부 지움"""
-    check_admin(db, token)
+    member = check_admin(db, token)
     tt = get_or_404(db, tt_id)
+    log(db, member, "시간표", "삭제", period_summary(tt.name, tt.starts_on, tt.ends_on))
     clear_slots(db, [s.id for s in tt.slots])
     db.delete(tt)                                  # 블록은 cascade 로 같이 삭제
     db.commit()

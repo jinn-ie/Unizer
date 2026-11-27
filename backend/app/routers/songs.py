@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Member, Song, SongMember
+from app.routers.auth import SessionCookie, optional_member
 from app.schemas import ImportSong, PreviewSong, SongImportText, SongMemberRead, SongRead
+from app.services.activity import log
 from app.song_import import build_preview
 
 # 곡 + 곡에 참여하는 부원
@@ -32,7 +34,7 @@ def preview_song_import(data: SongImportText, db: Annotated[Session, Depends(get
 
 
 @router.post("/songs/import", response_model=list[SongRead], status_code=201)   # → POST /api/songs/import
-def import_songs(songs: list[ImportSong], db: Annotated[Session, Depends(get_db)]):
+def import_songs(songs: list[ImportSong], db: Annotated[Session, Depends(get_db)], token: SessionCookie = None):
     """확인이 끝난 곡들을 한꺼번에 저장. 하나라도 문제가 있으면 전부 저장 안 함"""
     created = []
     for s in songs:
@@ -48,6 +50,9 @@ def import_songs(songs: list[ImportSong], db: Annotated[Session, Depends(get_db)
         db.add_all(SongMember(song=song, member_id=m.member_id, leader=m.leader) for m in s.members)
         created.append(song)
 
+    # 활동 기록: 로그인 안 하고 등록했으면 이름 없이 ("비로그인"으로 보여요)
+    titles = ", ".join(s.title for s in songs)
+    log(db, optional_member(db, token), "곡", "등록", f"{len(songs)}곡 · {titles}")
     db.commit()                 # 여기까지 오면 전부 한 번에 저장
     for song in created:
         db.refresh(song)

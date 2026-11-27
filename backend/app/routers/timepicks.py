@@ -6,9 +6,10 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import SongMember, TimepickDay, TimepickWeekly
+from app.models import Member, SongMember, TimepickDay, TimepickWeekly
 from app.routers.auth import SessionCookie, logged_in_session
 from app.schemas import TeamTimepickRead, TimepickDayCell, TimepickRead, TimepickWeeklyCell
+from app.services.activity import log
 
 router = APIRouter(prefix="/api/timepicks", tags=["타임픽"])
 Db = Annotated[Session, Depends(get_db)]
@@ -35,6 +36,8 @@ def save_weekly(cells: list[TimepickWeeklyCell], db: Db, token: SessionCookie = 
     # 같은 칸이 두 번 와도 한 번만 저장 (set 이 중복을 없애 줘요)
     for weekday, start_time in {(c.weekday, c.start_time) for c in cells}:
         db.add(TimepickWeekly(member_id=member_id, weekday=weekday, start_time=start_time))
+    # 활동 기록: 누가 언제만 (칸 내용은 안 남겨요). 자동 저장이 자주 와서 10분 안이면 한 줄로 합쳐요
+    log(db, db.get(Member, member_id), "타임픽", "저장", "매주 칸", merge=True)
     db.commit()
 
 
@@ -57,6 +60,7 @@ def save_week_days(week_start: date, cells: list[TimepickDayCell], db: Db, token
     busy_by_cell = {(c.date_on, c.start_time): c.busy for c in cells}
     for (date_on, start_time), busy in busy_by_cell.items():
         db.add(TimepickDay(member_id=member_id, date_on=date_on, start_time=start_time, busy=busy))
+    log(db, db.get(Member, member_id), "타임픽", "저장", f"{week_start:%m/%d} 주의 이 날만 칸", merge=True)
     db.commit()
 
 
