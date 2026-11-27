@@ -237,3 +237,24 @@ class TimepickDay(Base):
     date_on: Mapped[date] = mapped_column(primary_key=True)     # 그 날짜
     start_time: Mapped[time] = mapped_column(primary_key=True)  # 칸 시작 시각
     busy: Mapped[bool]
+
+# ── 활동 기록 (관리자 페이지) ──
+# 누가 · 언제 · 무엇을 했는지 한 줄씩 쌓아요. 내용(타임픽 칸 등)은 저장하지 않고 요약만 남겨요.
+# 새 테이블이라 create_all 이 만들어 줘요. (migrate 단계 필요 없음)
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_kst, index=True)  # 한 시각
+    # 한 사람. 로그인 안 하고 한 일(곡 등록 등)이면 None. 부원이 지워져도 기록은 남게 SET NULL
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("members.id", ondelete="SET NULL"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)   # 분류: 로그인 · 연습 · 메모 · 시간표 · 곡 · 공연 · 타임픽
+    action: Mapped[str] = mapped_column(String(20))             # 한 일: 로그인 · 로그인 실패 · 등록 · 수정 · 삭제 · 저장 …
+    summary: Mapped[str] = mapped_column(String(300))           # 한 줄 요약 (예: "11/30(일) 19:00–21:00 · 동방 · BAD")
+
+    member: Mapped["Member | None"] = relationship(lazy="joined")
+
+    @property
+    def member_name(self) -> str | None:
+        """화면에 보낼 이름 (예: "42기 이서진"). 로그인 안 하고 한 일이면 None"""
+        return f"{self.member.gen}기 {self.member.name}" if self.member else None
