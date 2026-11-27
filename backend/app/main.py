@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, feedback, members, notes, reservations, songs, timetables, shows, timepicks
+from app.routers import admin, auth, feedback, members, notes, reservations, songs, timetables, shows, timepicks
 
 # FastAPI 앱 객체. uvicorn 이 이 객체를 찾아서 실행한다. (app.main:app)
 app = FastAPI(title="Unizer API")
@@ -15,6 +15,7 @@ app.include_router(feedback.router)            # 의견 보내기
 app.include_router(auth.router)                # 로그인
 app.include_router(shows.router)
 app.include_router(timepicks.router)           # 타임픽 (안 되는 시간 칠하기)
+app.include_router(admin.router)               # 관리자 페이지 (활동 기록)
 
 # GET / 요청이 오면 이 함수가 실행되고, 반환한 dict 가 JSON 으로 응답된다.
 @app.get("/")
