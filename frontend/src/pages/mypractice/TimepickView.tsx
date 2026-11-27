@@ -363,7 +363,7 @@ export function TimepickView({
       {isWeekly ? (
         <div className="tp-weekly-head">
           <strong>매주 반복</strong>
-          <span>수업 · 알바등 반복되는 일정 | 유디 정규 연습은 표시할 필요 X</span>
+          <span>수업 · 알바등 반복 일정 | 유디 연습 표시할 필요 X</span>
         </div>
       ) : (
         <WeekNav weekStart={weekStart} isThisWeek={isThisWeek} onShift={shiftWeek} onToday={goToday} />
@@ -393,13 +393,7 @@ export function TimepickView({
               <i className="tp-sw is-busy" />
               {isWeekly ? '매주 불가능' : '불가능'}
             </li>
-            {/* 유디 연습은 날짜가 있는 '이 주만'에서만 보여요 */}
-            {!isWeekly && (
-              <li>
-                <i className="tp-sw is-practice" />
-                유디 연습 (못 바꿔요)
-              </li>
-            )}
+            {/* 유디 연습(곡명이 든 회색 막대)은 따로 설명하지 않아요. 회색 = 불가능으로 충분해서 */}
           </>
         )}
       </ul>

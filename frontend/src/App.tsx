@@ -7,16 +7,17 @@ import { PersonIcon } from './components/PersonIcon'
 import { SchedulePage } from './pages/schedule/SchedulePage'
 import { DataPage } from './pages/data/DataPage'
 import { MyPracticePage } from './pages/mypractice/MyPracticePage'
-import { FeedbackPage } from './pages/feedback/FeedbackPage'
 
 // account: 상단 사람 버튼 (로그인 전에는 로그인 화면, 로그인 후에는 마이페이지)
-type Tab = 'schedule' | 'songs' | 'mine' | 'feedback' | 'account'
+type Tab = 'schedule' | 'songs' | 'mine' | 'account'
 
+// '의견 보내기' 탭은 잠시 숨겨 뒀어요. (화면 pages/feedback/ 과 백엔드 API 는 그대로 있어요)
+// 다시 보이게 하려면: Tab 에 'feedback' 추가 → 아래 목록에 { key: 'feedback', label: '의견 보내기' }
+// → 화면 그리는 곳에 {tab === 'feedback' && <FeedbackPage />} (import 도 다시)
 const TABS: { key: Tab; label: string }[] = [
   { key: 'schedule', label: '연습 공간' },
   { key: 'mine', label: '타임픽' },
   { key: 'songs', label: '곡' },
-  { key: 'feedback', label: '의견 보내기' },
 ]
 
 export default function App() {
@@ -100,7 +101,6 @@ export default function App() {
           }}
         />
       )}
-      {tab === 'feedback' && <FeedbackPage />}
       {tab === 'account' && member && <MyPage member={member} onLogout={() => setMember(null)} />}
       {/* 로그인 화면은 다른 탭에 다녀와도 입력한 값이 남게 숨겨만 둬요. */}
       <LoginPage

@@ -51,7 +51,7 @@ interface SongGroup {
 export function DataPage() {
   // 펼친 곡 칩 (한 번에 하나). 한 곡이 여러 공연에 있을 수 있어서 "토글 키:곡 번호"로 구분
   const [openSongKey, setOpenSongKey] = useState<string | null>(null)
-  // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 맨 위 하나만 펼침
+  // 공연 토글을 직접 열고 닫은 기록. 기록이 없는 토글은 접힌 채로 시작
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const [editingShow, setEditingShow] = useState<Show | null>(null) // 곡 넣기 · 편집 시트
   // 곡 탭 맨 위 두 버튼 중 펼친 것 (한 번에 하나만)
@@ -280,8 +280,8 @@ export function DataPage() {
           </>
         ) : (
           <div className="show-groups">
-            {groups.map((group, i) => {
-              const open = toggled[group.key] ?? i === 0 // 직접 연 적 없으면 맨 위 하나만 펼침
+            {groups.map((group) => {
+              const open = toggled[group.key] ?? false // 직접 연 적 없으면 접힌 채로
               const show = group.show
               return (
                 <div key={group.key} className={`show-group${open ? ' is-open' : ''}`}>
