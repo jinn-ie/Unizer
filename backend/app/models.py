@@ -147,7 +147,8 @@ class Reservation(Base):
     slot_id: Mapped[int | None] = mapped_column(ForeignKey("timetable_slots.id", ondelete="SET NULL"))
     personal: Mapped[bool] = mapped_column(default=False)      # 개인 보충이면 True (단체 연습은 False)
     # 등록한 부원. 이 사람(과 관리자)만 수정 · 삭제할 수 있어요.
-    # 이 칸이 생기기 전의 연습 · 시간표로 만든 연습은 None → 관리자만 고칠 수 있어요.
+    # 시간표로 만든 곡 연습 · 이 칸이 생기기 전의 곡 연습은 그 곡의 리더가 들어가요.
+    # 곡이 아닌 일정(기본기 등)을 시간표로 만들었거나 예전에 잡았으면 None → 관리자만 고칠 수 있어요.
     created_by: Mapped[int | None] = mapped_column(ForeignKey("members.id"))
     song: Mapped["Song | None"] = relationship(lazy="joined")
     creator: Mapped["Member | None"] = relationship(lazy="joined")  # 등록자 (이름을 화면에 보내려고)

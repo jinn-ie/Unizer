@@ -84,12 +84,32 @@ def add_note_created_by(conn) -> bool:
     conn.execute(text("ALTER TABLE notes ADD COLUMN created_by INTEGER REFERENCES members(id)"))
     return True
 
+def fill_reservation_created_by_with_leader(conn) -> bool:
+    """2026-11-27 등록자가 없는 곡 연습 → 그 곡의 리더를 등록자로 (예전 연습 · 시간표로 만든 연습)"""
+    # 리더가 있는 곡의 연습 중 등록자가 빈 것만 채워요. 다 채우고 나면 바꿀 게 없어서 건너뜀.
+    # 리더가 여러 명이면 번호가 가장 작은 리더로. 곡이 아닌 일정(기본기 등)은 리더가 없어서 그대로 비워 둬요.
+    result = conn.execute(text("""
+        UPDATE reservations
+        SET created_by = (
+            SELECT MIN(member_id) FROM song_members
+            WHERE song_members.song_id = reservations.song_id AND leader = 1
+        )
+        WHERE created_by IS NULL
+          AND song_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM song_members
+            WHERE song_members.song_id = reservations.song_id AND leader = 1
+          )
+    """))
+    return result.rowcount > 0
+
 STEPS = [
     # add_reservation_memo,
     move_passwords_to_members,
     add_reservation_personal,
     add_reservation_created_by,
     add_note_created_by,
+    fill_reservation_created_by_with_leader,
 ]
 
 
