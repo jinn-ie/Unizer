@@ -148,6 +148,9 @@ export interface Note {
   date_on: string // "2026-11-19" 메모가 붙은 날짜
   text: string
   created_at: string // 남긴 시각
+  // 남긴 부원 (번호 + 이름). 예전 메모는 null, 백엔드가 아직 안 보내면 undefined
+  created_by?: number | null
+  created_by_name?: string | null
 }
 
 // 메모 남길 때 보내는 값 (NoteIn)

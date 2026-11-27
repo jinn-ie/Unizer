@@ -215,19 +215,21 @@ export function DaySheet({ day, focusKey, items, notes, member, onLogin, onClose
         )}
 
         {/* 메모 목록: 연습 목록 바로 아래 */}
-        <NoteList notes={notes} onChanged={() => onChanged()} />
+        <NoteList notes={notes} member={member} onChanged={() => onChanged()} />
 
         {/* 연습 추가 박스 + 메모 입력칸: 목록을 스크롤해도 보드 아래에 항상 붙어 있음 */}
         <div className="sheet-add">
-          {/* 연습 등록은 누가 잡았는지 남겨야 해서 로그인한 사람만 (메모는 그대로 누구나) */}
+          {/* 연습 · 메모는 누가 남겼는지 보여줘야 해서 로그인한 사람만 등록해요 */}
           {member ? (
-            <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
+            <>
+              <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
+              <NoteForm day={day} onChanged={() => onChanged()} />
+            </>
           ) : (
             <button type="button" className="sheet-login" onClick={onLogin}>
-              로그인하고 연습 등록하기
+              로그인하고 연습 · 메모 등록하기
             </button>
           )}
-          <NoteForm day={day} onChanged={() => onChanged()} />
         </div>
       </section>
     </div>
