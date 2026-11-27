@@ -2,10 +2,10 @@
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.models import Reservation, Song, Timetable, TimetableSlot
+from app.models import Reservation, Song, SongMember, Timetable, TimetableSlot
 from app.schemas import ReservationIn, TimetableIn
 from app.services.conflicts import check_reservation
 
@@ -34,8 +34,20 @@ def clear_slots(db: Session, slot_ids: list[int]):
         db.execute(delete(Reservation).where(Reservation.slot_id.in_(slot_ids)))
 
 
+def song_leader_id(db: Session, song_id: int | None) -> int | None:
+    """곡의 리더 번호 (리더가 여러 명이면 번호가 가장 작은 사람). 곡이 아니거나 리더가 없으면 None"""
+    if song_id is None:
+        return None
+    return db.scalar(
+        select(func.min(SongMember.member_id)).where(SongMember.song_id == song_id, SongMember.leader)
+    )
+
+
 def generate(db: Session, tt: Timetable, slot: TimetableSlot) -> int:
     """블록 하나 → 기간 안의 그 요일마다 연습 1건 (기간 전체, 지난 날짜 포함). 만든 개수를 돌려줌"""
+    # 시간표로 만든 곡 연습의 등록자 = 그 곡의 리더 (리더가 하루씩 옮기거나 지울 수 있게)
+    # 곡이 아닌 일정(기본기 등)은 None → 관리자만 고칠 수 있어요.
+    leader_id = song_leader_id(db, slot.song_id)
     count = 0
     day = tt.starts_on
     while day <= tt.ends_on:
@@ -57,7 +69,7 @@ def generate(db: Session, tt: Timetable, slot: TimetableSlot) -> int:
                     f"{slot.name} {day:%m/%d}({WEEKDAY_NAMES[slot.weekday]}) · {e.detail}",
                 )
             # member_ids 는 테이블 컬럼이 아니라서 뺌 (시간표로 만든 연습은 항상 단체)
-            db.add(Reservation(**item.model_dump(exclude={"member_ids"}), slot_id=slot.id))
+            db.add(Reservation(**item.model_dump(exclude={"member_ids"}), slot_id=slot.id, created_by=leader_id))
             count += 1
         day += timedelta(days=1)
     return count
