@@ -575,6 +575,14 @@ body.tb-dragging * {
 }
 
 /* 수정 모드: 이미 시작한 시간표 안내 */
+/* 보기 전용 안내 한 줄 */
+.tb-readonly {
+  margin: 0 2px;
+  font-size: 12px;
+  color: var(--faint);
+  text-align: center;
+}
+
 .tb-note {
   margin: 0 2px;
   font-size: 11.5px;

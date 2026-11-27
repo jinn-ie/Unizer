@@ -33,6 +33,11 @@ def logged_in_session(db: Session, token: str | None) -> LoginSession:
     return session
 
 
+def logged_in_member(db: Session, token: str | None) -> Member:
+    # 지금 로그인한 부원. 로그인 안 했으면 401 (연습 · 메모 · 시간표의 권한 확인에 써요)
+    return db.get(Member, logged_in_session(db, token).member_id)
+
+
 @router.post("/login", response_model=MemberRead)
 def login(data: LoginIn, request: Request, response: Response, db: Db, token: SessionCookie = None):
     member = db.scalar(select(Member).where(Member.gen == data.gen, Member.name == data.name))

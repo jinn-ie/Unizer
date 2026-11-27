@@ -29,6 +29,8 @@ class ReservationRead(BaseModel):
     slot_id: int | None             # 시간표로 만든 연습이면 블록 번호
     personal: bool                  # 개인 보충 여부
     member_ids: list[int]           # 함께하는 부원 (리더 포함). 모델의 @property 에서 읽어옴
+    created_by: int | None          # 등록한 부원 번호 (예전 연습 · 시간표로 만든 연습은 null)
+    created_by_name: str | None     # 등록한 부원 이름. 모델의 @property 에서 읽어옴
 
 class MemberRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -36,6 +38,7 @@ class MemberRead(BaseModel):
     id: int
     gen: int
     name: str
+    is_admin: bool                  # 관리자 여부. 모델의 @property 에서 읽어옴
 
 class SongRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -104,6 +107,8 @@ class NoteRead(BaseModel):
     date_on: date
     text: str
     created_at: datetime
+    created_by: int | None          # 남긴 부원 번호 (예전 메모는 null)
+    created_by_name: str | None     # 남긴 부원 이름. 모델의 @property 에서 읽어옴
 
 class FeedbackIn(BaseModel):
     """의견 보낼 때 받는 모양"""

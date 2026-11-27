@@ -37,6 +37,12 @@
   color: var(--faint);
 }
 
+/* 남긴 사람 이름: 일시보다 조금 밝게 (연습의 등록자 이름과 같은 느낌) */
+.note-author {
+  font-weight: 700;
+  color: var(--muted);
+}
+
 .note-del {
   flex-shrink: 0;
   min-width: 26px;

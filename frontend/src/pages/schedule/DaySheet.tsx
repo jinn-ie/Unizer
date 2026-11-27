@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { Note, ScheduleItem } from '../../types'
+import type { Member, Note, Reservation, ScheduleItem } from '../../types'
 import { spaceInfo, SPACE_INDEX } from '../../lib/spaces'
+import { canChange as canChangeItem } from '../../lib/permissions'
 import {
   addDays,
   formatCreated,
@@ -19,11 +20,20 @@ interface Props {
   focusKey?: string
   items: ScheduleItem[]
   notes: Note[] // 이 날의 메모
+  member: Member | null // 로그인한 부원 (로그인 전이면 null)
+  onLogin: () => void // 로그인 화면으로 가기
   onClose: () => void
   onChanged: (focusKey?: string) => void // 추가/수정/삭제 후 다시 불러오기
 }
 
-export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Props) {
+/** 등록한 사람 이름. 시간표로 만든 연습은 '시간표', 예전 연습은 없음(null) */
+function creatorLabel(r: Reservation): string | null {
+  if (r.created_by_name) return r.created_by_name
+  if (r.slot_id != null) return '시간표'
+  return null
+}
+
+export function DaySheet({ day, focusKey, items, notes, member, onLogin, onClose, onChanged }: Props) {
   const focusRef = useRef<HTMLLIElement>(null)
   const [activeKey, setActiveKey] = useState<string | null>(null) // 수정/삭제 버튼이 열린 연습
   const [editKey, setEditKey] = useState<string | null>(null) // 입력창으로 바뀐 연습
@@ -106,6 +116,8 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
               const focused = it.key === focusKey
               const r = it.reservation
               const active = it.key === activeKey
+              const canChange = canChangeItem(member, r) // 등록한 본인 · 관리자만
+              const creator = creatorLabel(r)
 
               // 수정 중: 같은 자리에 기존 값이 채워진 입력 박스
               if (it.key === editKey) {
@@ -153,28 +165,46 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
                   {active && (
                     <div className="sheet-actions" onClick={(e) => e.stopPropagation()}>
                       <p className="sheet-created">
+                        {/* 등록한 사람 · 등록일시 (등록자를 모르는 예전 연습은 일시만) */}
+                        {creator && (
+                          <>
+                            <b className="sheet-creator">{creator}</b>
+                            {' · '}
+                          </>
+                        )}
                         {formatCreated(r.created_at)}
                         {/* 수정한 적 있을 때만: 오른쪽에 | 로 구분해서 최종 수정일시 */}
                         {r.updated_at && ` | 수정 ${formatStamp(r.updated_at)}`}
                       </p>
-                      <button
-                        type="button"
-                        className="act-btn"
-                        onClick={() => {
-                          setEditKey(it.key)
-                          setActiveKey(null)
-                        }}
-                      >
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        className={`act-btn is-danger${confirmDelete ? ' is-confirm' : ''}`}
-                        disabled={busy}
-                        onClick={() => (confirmDelete ? remove(r.id) : setConfirmDelete(true))}
-                      >
-                        {busy ? '삭제하는 중…' : confirmDelete ? '정말 삭제할까요?' : '삭제'}
-                      </button>
+                      {canChange ? (
+                        <>
+                          <button
+                            type="button"
+                            className="act-btn"
+                            onClick={() => {
+                              setEditKey(it.key)
+                              setActiveKey(null)
+                            }}
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            className={`act-btn is-danger${confirmDelete ? ' is-confirm' : ''}`}
+                            disabled={busy}
+                            onClick={() => (confirmDelete ? remove(r.id) : setConfirmDelete(true))}
+                          >
+                            {busy ? '삭제하는 중…' : confirmDelete ? '정말 삭제할까요?' : '삭제'}
+                          </button>
+                        </>
+                      ) : (
+                        // 고칠 수 없는 연습: 버튼 대신 이유를 한 줄로
+                        <p className="sheet-locked">
+                          {member
+                            ? '등록한 사람만 수정 · 삭제할 수 있어요'
+                            : '로그인하면 내가 등록한 연습을 수정 · 삭제할 수 있어요'}
+                        </p>
+                      )}
                       {actionError && <p className="form-error">{actionError}</p>}
                     </div>
                   )}
@@ -185,12 +215,21 @@ export function DaySheet({ day, focusKey, items, notes, onClose, onChanged }: Pr
         )}
 
         {/* 메모 목록: 연습 목록 바로 아래 */}
-        <NoteList notes={notes} onChanged={() => onChanged()} />
+        <NoteList notes={notes} member={member} onChanged={() => onChanged()} />
 
         {/* 연습 추가 박스 + 메모 입력칸: 목록을 스크롤해도 보드 아래에 항상 붙어 있음 */}
         <div className="sheet-add">
-          <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
-          <NoteForm day={day} onChanged={() => onChanged()} />
+          {/* 연습 · 메모는 누가 남겼는지 보여줘야 해서 로그인한 사람만 등록해요 */}
+          {member ? (
+            <>
+              <PracticeBox day={day} onSaved={(created) => onChanged(`r-${created.id}`)} />
+              <NoteForm day={day} onChanged={() => onChanged()} />
+            </>
+          ) : (
+            <button type="button" className="sheet-login" onClick={onLogin}>
+              로그인하고 연습 · 메모 등록하기
+            </button>
+          )}
         </div>
       </section>
     </div>
