@@ -119,11 +119,6 @@
   background: color-mix(in srgb, var(--gray) 40%, transparent);
 }
 
-.tp-sw.is-practice {
-  background: color-mix(in srgb, var(--gray) 40%, var(--surface));
-  border-left: 3px solid var(--gray);
-}
-
 .tp-sw.is-lv1 {
   background: color-mix(in srgb, var(--teal) 16%, transparent);
 }
