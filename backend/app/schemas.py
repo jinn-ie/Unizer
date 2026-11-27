@@ -248,3 +248,15 @@ class TimepickRead(BaseModel):
 class TeamTimepickRead(TimepickRead):
     """팀 화면용: 누구의 타임픽인지 + 그 사람의 칸 (TimepickRead 를 물려받음)"""
     member_id: int
+
+# ── 활동 기록 (관리자 페이지) ──
+class ActivityRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    member_id: int | None
+    member_name: str | None     # "42기 이서진". 로그인 안 하고 한 일이면 null. 모델의 @property 에서 읽어옴
+    kind: str                   # 로그인 · 연습 · 메모 · 시간표 · 곡 · 공연 · 타임픽
+    action: str                 # 로그인 · 로그인 실패 · 등록 · 수정 · 삭제 · 저장 …
+    summary: str

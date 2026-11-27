@@ -206,3 +206,14 @@ export interface TimepickData {
 export interface TeamTimepick extends TimepickData {
   member_id: number
 }
+
+// 관리자 페이지: 활동 기록 한 줄 (GET /api/admin/activity, 백엔드 schemas.py 의 ActivityRead)
+export interface Activity {
+  id: number
+  created_at: string // "2026-11-27T14:30:12" (한국 시간)
+  member_id: number | null
+  member_name: string | null // "42기 이서진". 로그인 안 하고 한 일이면 null
+  kind: string // 로그인 · 연습 · 메모 · 시간표 · 곡 · 공연 · 타임픽
+  action: string // 로그인 · 로그인 실패 · 로그아웃 · 등록 · 수정 · 삭제 · 저장 …
+  summary: string // 한 줄 요약
+}

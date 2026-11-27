@@ -7,9 +7,12 @@ import { PersonIcon } from './components/PersonIcon'
 import { SchedulePage } from './pages/schedule/SchedulePage'
 import { DataPage } from './pages/data/DataPage'
 import { MyPracticePage } from './pages/mypractice/MyPracticePage'
+import { AdminPage } from './pages/admin/AdminPage'
+import { isAdmin } from './lib/permissions'
 
 // account: 상단 사람 버튼 (로그인 전에는 로그인 화면, 로그인 후에는 마이페이지)
-type Tab = 'schedule' | 'songs' | 'mine' | 'account'
+// admin: 관리자에게만 보이는 '관리' 탭 (활동 기록)
+type Tab = 'schedule' | 'songs' | 'mine' | 'account' | 'admin'
 
 // '의견 보내기' 탭은 잠시 숨겨 뒀어요. (화면 pages/feedback/ 과 백엔드 API 는 그대로 있어요)
 // 다시 보이게 하려면: Tab 에 'feedback' 추가 → 아래 목록에 { key: 'feedback', label: '의견 보내기' }
@@ -19,10 +22,15 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'mine', label: '타임픽' },
   { key: 'songs', label: '곡' },
 ]
+const ADMIN_TAB: { key: Tab; label: string } = { key: 'admin', label: '관리' }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('schedule')
+  const [selectedTab, setTab] = useState<Tab>('schedule')
   const [member, setMember] = useState<Member | null>(null)
+  // 관리 탭은 관리자에게만. 관리 탭에 있다가 로그아웃하면 '연습 공간'으로 보여줘요.
+  const admin = isAdmin(member)
+  const tabs = admin ? [...TABS, ADMIN_TAB] : TABS
+  const tab: Tab = selectedTab === 'admin' && !admin ? 'schedule' : selectedTab
   const [sessionStatus, setSessionStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [sessionAttempt, setSessionAttempt] = useState(0)
 
@@ -72,7 +80,7 @@ export default function App() {
       </header>
 
       <nav className="tabs" role="tablist">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -102,6 +110,7 @@ export default function App() {
           }}
         />
       )}
+      {tab === 'admin' && <AdminPage />}
       {tab === 'account' && member && <MyPage member={member} onLogout={() => setMember(null)} />}
       {/* 로그인 화면은 다른 탭에 다녀와도 입력한 값이 남게 숨겨만 둬요. */}
       <LoginPage

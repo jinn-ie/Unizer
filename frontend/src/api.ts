@@ -1,4 +1,5 @@
 import type {
+  Activity,
   FeedbackInput,
   ImportSong,
   LoginInput,
@@ -197,3 +198,19 @@ export function saveWeekTimepickDays(weekStart: string, cells: TimepickDayCell[]
 export function fetchTeamTimepick(songId: number, signal?: AbortSignal) {
   return getJson<TeamTimepick[]>(`/api/timepicks/songs/${songId}`, signal)
 }
+
+// ── 관리자 페이지 ──
+// 활동 기록: 최근 것부터. 다음 쪽은 받은 것 중 마지막 id 를 beforeId 로 (관리자만, 아니면 403)
+export function fetchActivity(
+  filter: { kind?: string; memberId?: number; beforeId?: number },
+  signal?: AbortSignal,
+) {
+  const params = new URLSearchParams({ limit: String(ACTIVITY_PAGE) })
+  if (filter.kind) params.set('kind', filter.kind)
+  if (filter.memberId !== undefined) params.set('member_id', String(filter.memberId))
+  if (filter.beforeId !== undefined) params.set('before_id', String(filter.beforeId))
+  return getJson<Activity[]>(`/api/admin/activity?${params}`, signal)
+}
+
+// 한 번에 받아 오는 기록 수 (이만큼 왔으면 '더 보기'가 있을 수 있어요)
+export const ACTIVITY_PAGE = 50

@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Reservation, ReservationMember
 from app.routers.auth import SessionCookie, logged_in_member
 from app.schemas import ReservationIn, ReservationRead
+from app.services.activity import change_summary, log, practice_summary
 from app.services.conflicts import check_reservation, personal_member_ids
 
 # 연습 (날짜 하나에 잡는 연습 1건. 시간표로 만든 연습도 여기서 하나씩 수정/삭제)
@@ -15,17 +16,18 @@ from app.services.conflicts import check_reservation, personal_member_ids
 router = APIRouter(prefix="/api/reservations", tags=["연습"])
 
 
-def get_changeable(db: Session, token: str | None, reservation_id: int) -> Reservation:
+def get_changeable(db: Session, token: str | None, reservation_id: int):
     """수정 · 삭제할 연습을 찾고, 고칠 권한이 있는지 확인
-    로그인 안 했으면 401, 없는 연습이면 404, 남이 등록한 연습이면 403"""
+    로그인 안 했으면 401, 없는 연습이면 404, 남이 등록한 연습이면 403
+    (연습, 한 사람) 을 돌려줘요. 한 사람은 활동 기록에 써요."""
     member = logged_in_member(db, token)
     reservation = db.get(Reservation, reservation_id)
     if reservation is None:
         raise HTTPException(404, "해당하는 연습이 없어요.")
-    # 등록자가 없는 연습(예전 연습 · 시간표로 만든 연습)은 created_by 가 None 이라 관리자만 통과
+    # 등록자가 없는 연습(곡이 아닌 예전 일정 등)은 created_by 가 None 이라 관리자만 통과
     if not member.is_admin and reservation.created_by != member.id:
         raise HTTPException(403, "등록한 사람만 수정 · 삭제할 수 있어요.")
-    return reservation
+    return reservation, member
 
 
 @router.get("", response_model=list[ReservationRead])                    # → GET /api/reservations
@@ -43,6 +45,7 @@ def create_reservation(data: ReservationIn, db: Annotated[Session, Depends(get_d
     reservation = Reservation(**data.model_dump(exclude={"member_ids"}), created_by=member.id)
     reservation.member_links = [ReservationMember(member_id=m) for m in member_ids]
     db.add(reservation)
+    log(db, member, "연습", "등록", practice_summary(db, data))
     db.commit()
     db.refresh(reservation)
     return reservation
@@ -52,9 +55,10 @@ def create_reservation(data: ReservationIn, db: Annotated[Session, Depends(get_d
 def update_reservation(
     reservation_id: int, data: ReservationIn, db: Annotated[Session, Depends(get_db)], token: SessionCookie = None
 ):
-    reservation = get_changeable(db, token, reservation_id)
+    reservation, member = get_changeable(db, token, reservation_id)
     check_reservation(db, data, exclude_id=reservation_id)
     member_ids = personal_member_ids(db, data)
+    before = practice_summary(db, reservation)  # 기록용: 고치기 전 모습
     # ReservationIn 에는 created_by 가 없어서, 관리자가 고쳐도 등록자는 그대로 남음
     for key, value in data.model_dump(exclude={"member_ids"}).items():
         setattr(reservation, key, value)
@@ -68,6 +72,7 @@ def update_reservation(
         if member_id not in already:
             reservation.member_links.append(ReservationMember(member_id=member_id))
 
+    log(db, member, "연습", "수정", change_summary(before, practice_summary(db, data)))
     db.commit()
     db.refresh(reservation)
     return reservation
@@ -75,6 +80,7 @@ def update_reservation(
 
 @router.delete("/{reservation_id}", status_code=204)                     # → DELETE /api/reservations/{id}
 def delete_reservation(reservation_id: int, db: Annotated[Session, Depends(get_db)], token: SessionCookie = None):
-    reservation = get_changeable(db, token, reservation_id)
+    reservation, member = get_changeable(db, token, reservation_id)
+    log(db, member, "연습", "삭제", practice_summary(db, reservation))  # 지우기 전에 요약을 만들어 둬요
     db.delete(reservation)
     db.commit()
