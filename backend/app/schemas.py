@@ -107,6 +107,8 @@ class NoteRead(BaseModel):
     date_on: date
     text: str
     created_at: datetime
+    created_by: int | None          # 남긴 부원 번호 (예전 메모는 null)
+    created_by_name: str | None     # 남긴 부원 이름. 모델의 @property 에서 읽어옴
 
 class FeedbackIn(BaseModel):
     """의견 보낼 때 받는 모양"""

@@ -190,6 +190,14 @@ class Note(Base):
     date_on: Mapped[date]                                            # 메모가 붙은 날짜
     text: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(default=now_kst)    # 남긴 시각
+    # 남긴 부원. 이 사람(과 관리자)만 지울 수 있어요. 이 칸이 생기기 전의 메모는 None → 관리자만
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("members.id"))
+    creator: Mapped["Member | None"] = relationship(lazy="joined")
+
+    @property
+    def created_by_name(self) -> str | None:
+        """화면에 보낼 작성자 이름 (작성자를 모르면 None)"""
+        return self.creator.name if self.creator else None
 
 class Feedback(Base):
     __tablename__ = "feedbacks"

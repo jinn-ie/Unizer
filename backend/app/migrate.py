@@ -77,11 +77,19 @@ def add_reservation_created_by(conn) -> bool:
     conn.execute(text("ALTER TABLE reservations ADD COLUMN created_by INTEGER REFERENCES members(id)"))
     return True
 
+def add_note_created_by(conn) -> bool:
+    """2026-11-27 notes.created_by 추가 (메모를 남긴 부원)"""
+    if has_column(conn, "notes", "created_by"):
+        return False                       # 이미 있음 → 건너뜀
+    conn.execute(text("ALTER TABLE notes ADD COLUMN created_by INTEGER REFERENCES members(id)"))
+    return True
+
 STEPS = [
     # add_reservation_memo,
     move_passwords_to_members,
     add_reservation_personal,
     add_reservation_created_by,
+    add_note_created_by,
 ]
 
 
